@@ -171,8 +171,14 @@
 # Storage: for factory reset protection feature
 /dev/block/by-name/frp   0660   system     system
 
+# Storage: for UDFPS calibration data sideload feature
+/dev/block/by-name/mfg_data 0660   system     system
+
 # TPU
 /dev/janeiro            0660   system     system
+
+# DSP
+/dev/gxp                0660   system     system
 
 # TOE
 /dev/dit2                 0660   radio      radio

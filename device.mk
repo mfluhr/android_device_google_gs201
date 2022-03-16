@@ -54,8 +54,6 @@ PRODUCT_SOONG_NAMESPACES += \
 	vendor/google_nos/test/system-test-harness \
 	vendor/google/camera
 
-DEVICE_USES_EXYNOS_GRALLOC_VERSION := 4
-
 LOCAL_KERNEL := $(TARGET_KERNEL_DIR)/Image.lz4
 
 # OEM Unlock reporting
@@ -155,62 +153,59 @@ endif
 USE_SWIFTSHADER := false
 
 # HWUI
-TARGET_USES_VULKAN = false
+TARGET_USES_VULKAN = true
 
-PRODUCT_SOONG_NAMESPACES += vendor/arm/mali/valhall
+PRODUCT_SOONG_NAMESPACES += \
+	vendor/arm/mali/valhall
 
 $(call soong_config_set,pixel_mali,soc,$(TARGET_BOARD_PLATFORM))
 
+include device/google/gs101/neuralnetwork/neuralnetwork.mk
+
 PRODUCT_PACKAGES += \
-       csffw_image_prebuilt__firmware_prebuilt_todx_mali_csffw.bin \
-       libGLES_mali \
-       vulkan.mali \
-       libOpenCL \
-       libgpudataproducer \
+	csffw_image_prebuilt__firmware_prebuilt_todx_mali_csffw.bin \
+	libGLES_mali \
+	vulkan.mali \
+	libOpenCL \
+	libgpudataproducer \
 
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.hardware.vulkan=mali
-
-include device/google/gs101/neuralnetwork/neuralnetwork.mk
+	ro.hardware.vulkan=mali
 
 ifeq ($(USE_SWIFTSHADER),true)
 PRODUCT_PACKAGES += \
-       libGLESv1_CM_swiftshader \
-       libEGL_swiftshader \
-       libGLESv2_swiftshader
+   libGLESv1_CM_swiftshader \
+   libEGL_swiftshader \
+   libGLESv2_swiftshader
 endif
 
 PRODUCT_COPY_FILES += \
-       frameworks/native/data/etc/android.hardware.opengles.aep.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.opengles.aep.xml \
-       frameworks/native/data/etc/android.hardware.vulkan.version-1_1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
-       frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
-       frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \
-       frameworks/native/data/etc/android.software.vulkan.deqp.level-2021-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level.xml \
-       frameworks/native/data/etc/android.software.opengles.deqp.level-2021-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.opengles.deqp.level.xml
+	frameworks/native/data/etc/android.hardware.opengles.aep.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.opengles.aep.xml \
+	frameworks/native/data/etc/android.hardware.vulkan.version-1_1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
+	frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
+	frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \
+	frameworks/native/data/etc/android.software.vulkan.deqp.level-2021-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level.xml \
+	frameworks/native/data/etc/android.software.opengles.deqp.level-2021-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.opengles.deqp.level.xml
 
 ifeq ($(USE_SWIFTSHADER),true)
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.hardware.egl = swiftshader
+	ro.hardware.egl = swiftshader
 else
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.hardware.egl = mali
+	ro.hardware.egl = mali
 endif
+
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.opengles.version=196610 \
-       debug.renderengine.backend=skiaglthreaded \
-       graphics.gpu.profiler.support=true \
+	ro.opengles.version=196610 \
+	graphics.gpu.profiler.support=true \
+	debug.renderengine.backend=skiaglthreaded \
 
 # GRAPHICS - GPU (end)
 # ####################
 
 # Device Manifest, Device Compatibility Matrix for Treble
-ifeq ($(DEVICE_USES_EXYNOS_GRALLOC_VERSION), 4)
-	DEVICE_MANIFEST_FILE := \
-		device/google/gs201/manifest.xml
-else
-	DEVICE_MANIFEST_FILE := \
-		device/google/gs201/manifest-gralloc3.xml
-endif
+DEVICE_MANIFEST_FILE := \
+	device/google/gs201/manifest.xml
 
 ifneq (,$(filter aosp_%,$(TARGET_PRODUCT)))
 DEVICE_MANIFEST_FILE += \
@@ -374,7 +369,9 @@ PRODUCT_PACKAGES += android.hardware.sensors@2.1-service.multihal
 
 # USB HAL
 PRODUCT_PACKAGES += \
-	android.hardware.usb@1.3-service.gs201
+	android.hardware.usb-service
+PRODUCT_PACKAGES += \
+	android.hardware.usb.gadget-service
 
 # MIDI feature
 PRODUCT_COPY_FILES += \
@@ -386,9 +383,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	persist.vendor.usb.usbradio.config=dm
 endif
 
-# Power HAL
-PRODUCT_COPY_FILES += \
-	device/google/gs201/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
 # adpf 16ms update rate
 PRODUCT_PRODUCT_PROPERTIES += \
         vendor.powerhal.adpf.rate=16666666
@@ -451,19 +445,11 @@ PRODUCT_PROPERTY_OVERRIDES += aaudio.hw_burst_min_usec=2000
 PRODUCT_PACKAGES += \
 	com.android.future.usb.accessory
 
-# for now include gralloc here. should come from hardware/google_devices/exynos5
-ifeq ($(DEVICE_USES_EXYNOS_GRALLOC_VERSION), 4)
-	PRODUCT_PACKAGES += \
-		android.hardware.graphics.mapper@4.0-impl \
-		android.hardware.graphics.allocator@4.0-service \
-		android.hardware.graphics.allocator@4.0-impl
-else
-	PRODUCT_PACKAGES += \
-		android.hardware.graphics.mapper@2.0-impl \
-		android.hardware.graphics.allocator@2.0-service \
-		android.hardware.graphics.allocator@2.0-impl \
-		gralloc.$(TARGET_BOARD_PLATFORM)
-endif
+PRODUCT_PACKAGES += \
+	android.hardware.graphics.mapper@4.0-impl \
+	android.hardware.graphics.allocator@4.0-service \
+	android.hardware.graphics.allocator@4.0-impl \
+	android.hardware.graphics.allocator-V1-service
 
 # AIDL memtrack
 PRODUCT_PACKAGES += \
@@ -857,8 +843,8 @@ SUPPORT_MULTI_SIM := true
 SUPPORT_NR := true
 # Support 5G on both stacks
 SUPPORT_NR_DS := true
-# Using IRadio 1.6
-USE_RADIO_HAL_1_6 := true
+# Using IRadio 2.0
+USE_RADIO_HAL_2_0 := true
 
 #$(call inherit-product, vendor/google_devices/telephony/common/device-vendor.mk)
 #$(call inherit-product, vendor/google_devices/gs201/proprietary/device-vendor.mk)
@@ -923,7 +909,7 @@ PRODUCT_PACKAGES += \
 	android.hardware.audio.effect@7.0-impl \
 	android.hardware.soundtrigger@2.3-impl \
 	vendor.google.whitechapel.audio.audioext@3.0-impl \
-	android.hardware.bluetooth.audio@2.1-impl
+	android.hardware.bluetooth.audio-impl \
 
 #
 ##Audio HAL libraries
@@ -1081,3 +1067,8 @@ PRODUCT_PACKAGES_DEBUG += BatteryStatsViewer
 # (TODO: b/169535506) This includes the FCM for system_ext and product partition.
 # It must be split into the FCM of each partition.
 DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE := device/google/gs201/device_framework_matrix_product.xml
+
+# Keymint configuration
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.software.device_id_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.device_id_attestation.xml \
+    frameworks/native/data/etc/android.hardware.device_unique_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.device_unique_attestation.xml
