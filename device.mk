@@ -230,8 +230,8 @@ DEVICE_PACKAGE_OVERLAYS += device/google/gs201/overlay
 # This will be updated to 33 (Android T) for shipping
 PRODUCT_SHIPPING_API_LEVEL := 32
 
-# Temporarily disable the debugfs restriction on 31 (Android S)
-PRODUCT_SET_DEBUGFS_RESTRICTIONS := false
+# RKP VINTF
+-include vendor/google_nos/host/android/hals/keymaster/aidl/strongbox/RemotelyProvisionedComponent-citadel.mk
 
 # Enforce the Product interface
 PRODUCT_PRODUCT_VNDK_VERSION := current
@@ -452,10 +452,6 @@ PRODUCT_PACKAGES += \
 	android.hardware.graphics.allocator@4.0-service \
 	android.hardware.graphics.allocator@4.0-impl \
 	android.hardware.graphics.allocator-V1-service
-
-# AIDL memtrack
-PRODUCT_PACKAGES += \
-	android.hardware.memtrack-service.example
 
 PRODUCT_PACKAGES += \
 	memtrack.$(TARGET_BOARD_PLATFORM) \
@@ -890,9 +886,6 @@ PRODUCT_COPY_FILES += \
 	device/google/gs201/radio/config/default.nprf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default.nprf \
 	device/google/gs201/radio/config/default_metrics.xml:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default_metrics.xml
 
-PRODUCT_COPY_FILES += \
-	device/google/gs201/radio/gnss_blanking.csv:$(TARGET_COPY_OUT_VENDOR)/etc/modem/gnss_blanking.csv
-
 # ARM NN files
 ARM_COMPUTE_CL_ENABLE := 1
 
@@ -935,7 +928,6 @@ PRODUCT_PACKAGES += \
 	audio_amcs_ext \
 	audio.usb.default \
 	audio.usbv2.default \
-	audio.a2dp.default \
 	audio.bluetooth.default \
 	audio.r_submix.default \
 	audio_spk_35l41 \
