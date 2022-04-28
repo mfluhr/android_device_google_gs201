@@ -1,9 +1,31 @@
-<compatibility-matrix version="1.0" type="framework" level="6">
+<compatibility-matrix version="1.0" type="framework" level="7">
+    <hal format="aidl" optional="true">
+        <name>android.hardware.biometrics.face</name>
+        <interface>
+            <name>IFace</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
     <hal format="aidl">
         <name>android.hardware.contexthub</name>
         <version>1</version>
         <interface>
             <name>IContextHub</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="hidl">
+        <name>android.hardware.dumpstate</name>
+        <version>1.1</version>
+        <interface>
+            <name>IDumpstateDevice</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="aidl">
+        <name>android.hardware.gnss</name>
+        <interface>
+            <name>IGnss</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -21,6 +43,14 @@
         <interface>
             <name>ISap</name>
             <instance>slot2</instance>
+        </interface>
+    </hal>
+    <hal format="hidl" optional="true">
+        <name>android.hardware.radio.config</name>
+        <version>1.1</version>
+        <interface>
+            <name>IRadioConfig</name>
+            <instance>default</instance>
         </interface>
     </hal>
     <hal format="aidl" optional="true">
@@ -113,7 +143,7 @@
     <hal format="aidl" optional="true">
         <name>hardware.qorvo.uwb</name>
         <interface>
-            <name>IUwb</name>
+            <name>IUwbVendor</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -143,9 +173,17 @@
     </hal>
     <hal format="hidl">
         <name>hardware.google.bluetooth.ccc</name>
-        <version>1.0</version>
+        <version>1.1</version>
         <interface>
             <name>IBluetoothCcc</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="hidl" optional="true">
+        <name>hardware.google.bluetooth.ewp</name>
+        <version>1.0</version>
+        <interface>
+            <name>IBluetoothEwp</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -159,7 +197,7 @@
     </hal>
     <hal format="hidl" optional="true">
         <name>vendor.google.radioext</name>
-        <version>1.3</version>
+        <version>1.4</version>
         <interface>
             <name>IRadioExt</name>
             <instance>default</instance>
