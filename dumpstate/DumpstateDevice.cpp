@@ -110,7 +110,7 @@ void DumpstateDevice::dumpLogs(int fd, std::string srcDir, std::string destDir, 
         std::string copyCmd = "/vendor/bin/cp " + srcLogFile + " " + destLogFile;
 
         ALOGD("Copying %s to %s\n", srcLogFile.c_str(), destLogFile.c_str());
-        RunCommandToFd(fd, "CP DIAG LOGS", { "/vendor/bin/sh", "-c", copyCmd.c_str() }, options);
+        RunCommandToFd(fd, "CP LOGS", { "/vendor/bin/sh", "-c", copyCmd.c_str() }, options);
     }
 
     while (num_entries--) {
@@ -529,7 +529,62 @@ void DumpstateDevice::dumpTouchSection(int fd) {
                                       "/proc/fts_ext/driver_test"};
     const char lsi_spi_path[] = "/sys/devices/virtual/sec/tsp";
     const char syna_cmd_path[] = "/sys/class/spi_master/spi0/spi0.0/synaptics_tcm.0/sysfs";
+    const char focaltech_cmd_path[] = "/proc/focaltech_touch";
     char cmd[256];
+
+    if (!access(focaltech_cmd_path, R_OK)) {
+        // Enable: force touch active
+        snprintf(cmd, sizeof(cmd), "echo 21 > %s/force_active", focaltech_cmd_path);
+        RunCommandToFd(fd, "Enable Force Touch Active", {"/vendor/bin/sh", "-c", cmd});
+
+        // Touch Firmware Version
+        snprintf(cmd, sizeof(cmd), "%s/FW_Version", focaltech_cmd_path);
+        DumpFileToFd(fd, "Touch Firmware Version", cmd);
+
+        // Touch INT PIN Test
+        snprintf(cmd, sizeof(cmd), "%s/INT_PIN", focaltech_cmd_path);
+        DumpFileToFd(fd, "Touch INT PIN Test", cmd);
+
+        // Get Raw Data - Delta
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Panel_Differ", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Raw Data - Panel_Differ", cmd);
+
+        // Get Raw Data - Raw
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Rawdata", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Raw Data - Raw", cmd);
+
+        // Get Raw Data - Baseline
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Baseline", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Raw Data - Baseline", cmd);
+
+        // Get Raw Data - Noise
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Noise", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Raw Data - Noise", cmd);
+
+        // Get Raw Data - Uniformity
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Rawdata_Uniformity", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Raw Data - Uniformity", cmd);
+
+        // Get Scap_CB
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Scap_CB", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Scap_CB", cmd);
+
+        // Get Scap_CB - Raw
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Scap_Rawdata", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Scap_Rawdata", cmd);
+
+        // Get Short Test
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Short", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get Short Test", cmd);
+
+        // Get HeatMap(ms,ss)
+        snprintf(cmd, sizeof(cmd), "%s/selftest/Strength", focaltech_cmd_path);
+        DumpFileToFd(fd, "Get HeatMap(ms,ss)", cmd);
+
+        // Disable: force touch active
+        snprintf(cmd, sizeof(cmd), "echo 20 > %s/force_active", focaltech_cmd_path);
+        RunCommandToFd(fd, "Disable Force Touch Active", {"/vendor/bin/sh", "-c", cmd});
+    }
 
     if (!access(syna_cmd_path, R_OK)) {
         // Enable: force touch active
@@ -832,8 +887,7 @@ void DumpstateDevice::dumpMemorySection(int fd) {
                         "fi; "
                         "done"});
     DumpFileToFd(fd, "dmabuf info", "/d/dma_buf/bufinfo");
-    DumpFileToFd(fd, "Page Pinner - longterm pin", "/sys/kernel/debug/page_pinner/longterm_pinner");
-    DumpFileToFd(fd, "Page Pinner - alloc_contig_failed", "/sys/kernel/debug/page_pinner/alloc_contig_failed");
+    DumpFileToFd(fd, "Page Pinner - longterm pin", "/sys/kernel/debug/page_pinner/buffer");
 }
 
 static void DumpF2FS(int fd) {
@@ -939,7 +993,7 @@ void DumpstateDevice::dumpAoCSection(int fd) {
       {"/vendor/bin/sh", "-c", "echo 'dbg heap -c 4' > /dev/acd-debug; timeout 0.1 cat /dev/acd-debug"},
       CommandOptions::WithTimeout(1).Build());
     RunCommandToFd(fd, "AoC MIF Stats",
-      {"/vendor/bin/sh", "-c", "echo 'mif details' > /dev/acd-debug; timeout 0.1 cat /dev/acd-debug"},
+      {"/vendor/bin/sh", "-c", "echo 'mif details' > /dev/acd-debug; timeout 0.5 cat /dev/acd-debug"},
       CommandOptions::WithTimeout(1).Build());
 }
 
@@ -1089,7 +1143,7 @@ void DumpstateDevice::dumpModem(int fd, int fdModem)
         dumpModemEFS(modemLogAllDir);
     }
 
-    RunCommandToFd(fd, "TAR LOG", {"/vendor/bin/tar", "cvf", modemLogCombined.c_str(), "-C", modemLogAllDir.c_str(), "."}, CommandOptions::WithTimeout(120).Build());
+    RunCommandToFd(fd, "TAR LOG", {"/vendor/bin/tar", "cvf", modemLogCombined.c_str(), "-C", modemLogAllDir.c_str(), "."}, CommandOptions::WithTimeout(20).Build());
     RunCommandToFd(fd, "CHG PERM", {"/vendor/bin/chmod", "a+w", modemLogCombined.c_str()}, CommandOptions::WithTimeout(2).Build());
 
     std::vector<uint8_t> buffer(65536);
