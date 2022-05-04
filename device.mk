@@ -120,6 +120,17 @@ PRODUCT_PRODUCT_PROPERTIES += \
 PRODUCT_PRODUCT_PROPERTIES += \
 	persist.vendor.ril.camp_on_earlier=1
 
+# Set the Bluetooth Class of Device
+# Service Field: 0x5A -> 90
+#    Bit 17: Networking
+#    Bit 19: Capturing
+#    Bit 20: Object Transfer
+#    Bit 22: Telephony
+# MAJOR_CLASS: 0x02 -> 2 (Phone)
+# MINOR_CLASS: 0x0C -> 12 (Smart Phone)
+PRODUCT_PRODUCT_PROPERTIES += \
+    bluetooth.device.class_of_device=90,2,12
+
 # Set supported Bluetooth profiles to enabled
 PRODUCT_PRODUCT_PROPERTIES += \
 	bluetooth.profile.asha.central.enabled?=true \
@@ -618,6 +629,7 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.app.duration=16600000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.sf.duration=16600000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.app.duration=16600000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.frame_rate_multiple_threshold=120
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.layer_caching_active_layer_timeout_ms=1000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.treat_170m_as_sRGB=1
 
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.enable_layer_caching=true
