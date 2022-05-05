@@ -110,7 +110,7 @@ void DumpstateDevice::dumpLogs(int fd, std::string srcDir, std::string destDir, 
         std::string copyCmd = "/vendor/bin/cp " + srcLogFile + " " + destLogFile;
 
         ALOGD("Copying %s to %s\n", srcLogFile.c_str(), destLogFile.c_str());
-        RunCommandToFd(fd, "CP DIAG LOGS", { "/vendor/bin/sh", "-c", copyCmd.c_str() }, options);
+        RunCommandToFd(fd, "CP LOGS", { "/vendor/bin/sh", "-c", copyCmd.c_str() }, options);
     }
 
     while (num_entries--) {
@@ -887,8 +887,7 @@ void DumpstateDevice::dumpMemorySection(int fd) {
                         "fi; "
                         "done"});
     DumpFileToFd(fd, "dmabuf info", "/d/dma_buf/bufinfo");
-    DumpFileToFd(fd, "Page Pinner - longterm pin", "/sys/kernel/debug/page_pinner/longterm_pinner");
-    DumpFileToFd(fd, "Page Pinner - alloc_contig_failed", "/sys/kernel/debug/page_pinner/alloc_contig_failed");
+    DumpFileToFd(fd, "Page Pinner - longterm pin", "/sys/kernel/debug/page_pinner/buffer");
 }
 
 static void DumpF2FS(int fd) {
@@ -994,7 +993,7 @@ void DumpstateDevice::dumpAoCSection(int fd) {
       {"/vendor/bin/sh", "-c", "echo 'dbg heap -c 4' > /dev/acd-debug; timeout 0.1 cat /dev/acd-debug"},
       CommandOptions::WithTimeout(1).Build());
     RunCommandToFd(fd, "AoC MIF Stats",
-      {"/vendor/bin/sh", "-c", "echo 'mif details' > /dev/acd-debug; timeout 0.1 cat /dev/acd-debug"},
+      {"/vendor/bin/sh", "-c", "echo 'mif details' > /dev/acd-debug; timeout 0.5 cat /dev/acd-debug"},
       CommandOptions::WithTimeout(1).Build());
 }
 
@@ -1144,7 +1143,7 @@ void DumpstateDevice::dumpModem(int fd, int fdModem)
         dumpModemEFS(modemLogAllDir);
     }
 
-    RunCommandToFd(fd, "TAR LOG", {"/vendor/bin/tar", "cvf", modemLogCombined.c_str(), "-C", modemLogAllDir.c_str(), "."}, CommandOptions::WithTimeout(120).Build());
+    RunCommandToFd(fd, "TAR LOG", {"/vendor/bin/tar", "cvf", modemLogCombined.c_str(), "-C", modemLogAllDir.c_str(), "."}, CommandOptions::WithTimeout(20).Build());
     RunCommandToFd(fd, "CHG PERM", {"/vendor/bin/chmod", "a+w", modemLogCombined.c_str()}, CommandOptions::WithTimeout(2).Build());
 
     std::vector<uint8_t> buffer(65536);
