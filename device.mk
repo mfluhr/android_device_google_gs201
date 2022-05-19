@@ -122,14 +122,15 @@ PRODUCT_PRODUCT_PROPERTIES += \
 
 # Set the Bluetooth Class of Device
 # Service Field: 0x5A -> 90
+#    Bit 14: LE audio
 #    Bit 17: Networking
 #    Bit 19: Capturing
 #    Bit 20: Object Transfer
 #    Bit 22: Telephony
-# MAJOR_CLASS: 0x02 -> 2 (Phone)
+# MAJOR_CLASS: 0x42 -> 66 (Phone)
 # MINOR_CLASS: 0x0C -> 12 (Smart Phone)
 PRODUCT_PRODUCT_PROPERTIES += \
-    bluetooth.device.class_of_device=90,2,12
+    bluetooth.device.class_of_device=90,66,12
 
 # Set supported Bluetooth profiles to enabled
 PRODUCT_PRODUCT_PROPERTIES += \
@@ -921,6 +922,8 @@ PRODUCT_COPY_FILES += \
 	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_Default.cfg:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_Default.cfg \
 	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_Default.nprf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_Default.nprf \
 	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_Default_metrics.xml:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_Default_metrics.xml \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_stability.cfg:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_stability.cfg \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_stability.nprf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_stability.nprf \
 
 # ARM NN files
 ARM_COMPUTE_CL_ENABLE := 1
