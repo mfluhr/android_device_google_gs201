@@ -127,7 +127,7 @@
     </hal>
     <hal format="aidl" optional="true">
       <name>com.google.hardware.pixel.display</name>
-        <version>4</version>
+        <version>6</version>
         <interface>
             <name>IDisplay</name>
             <instance>default</instance>
@@ -168,6 +168,14 @@
         <version>1.1</version>
         <interface>
             <name>IBluetoothSar</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="hidl" optional="true">
+        <name>hardware.google.bluetooth.ext</name>
+        <version>1.0</version>
+        <interface>
+            <name>IBluetoothExt</name>
             <instance>default</instance>
         </interface>
     </hal>
