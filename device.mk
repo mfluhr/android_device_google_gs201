@@ -21,7 +21,7 @@ TARGET_BOARD_PLATFORM := gs201
 AB_OTA_POSTINSTALL_CONFIG += \
 	RUN_POSTINSTALL_system=true \
 	POSTINSTALL_PATH_system=system/bin/otapreopt_script \
-	FILESYSTEM_TYPE_system=erofs \
+	FILESYSTEM_TYPE_system=ext4 \
 POSTINSTALL_OPTIONAL_system=true
 
 # Set Vendor SPL to match platform
@@ -120,6 +120,10 @@ PRODUCT_PRODUCT_PROPERTIES += \
 PRODUCT_PRODUCT_PROPERTIES += \
 	persist.vendor.ril.camp_on_earlier=1
 
+# Enable SET_SCREEN_STATE request
+PRODUCT_PROPERTY_OVERRIDES += \
+	persist.vendor.ril.enable_set_screen_state=1
+
 # Set the Bluetooth Class of Device
 # Service Field: 0x5A -> 90
 #    Bit 14: LE audio
@@ -137,24 +141,17 @@ PRODUCT_PRODUCT_PROPERTIES += \
 	bluetooth.profile.asha.central.enabled?=true \
 	bluetooth.profile.a2dp.source.enabled?=true \
 	bluetooth.profile.avrcp.target.enabled?=true \
-	bluetooth.profile.bap.broadcast.assist.enabled?=true \
-	bluetooth.profile.bap.unicast.client.enabled?=true \
 	bluetooth.profile.bas.client.enabled?=true \
-	bluetooth.profile.csip.set_coordinator.enabled?=true \
 	bluetooth.profile.gatt.enabled?=true \
-	bluetooth.profile.hap.client.enabled?=true \
 	bluetooth.profile.hfp.ag.enabled?=true \
 	bluetooth.profile.hid.device.enabled?=true \
 	bluetooth.profile.hid.host.enabled?=true \
 	bluetooth.profile.map.server.enabled?=true \
-	bluetooth.profile.mcp.server.enabled?=true \
 	bluetooth.profile.opp.enabled?=true \
 	bluetooth.profile.pan.nap.enabled?=true \
 	bluetooth.profile.pan.panu.enabled?=true \
 	bluetooth.profile.pbap.server.enabled?=true \
 	bluetooth.profile.sap.server.enabled?=true \
-	bluetooth.profile.ccp.server.enabled?=true \
-	bluetooth.profile.vcp.controller.enabled?=true
 
 # Carrier configuration default location
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -171,6 +168,7 @@ USES_LASSEN_MODEM := true
 ifeq ($(USES_GOOGLE_DIALER_CARRIER_SETTINGS),true)
 USE_GOOGLE_DIALER := true
 USE_GOOGLE_CARRIER_SETTINGS := true
+USES_GAUDIO := true
 endif
 
 ifeq (,$(filter aosp_%,$(TARGET_PRODUCT)))
@@ -481,8 +479,6 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_PACKAGES += \
 	android.hardware.graphics.mapper@4.0-impl \
-	android.hardware.graphics.allocator@4.0-service \
-	android.hardware.graphics.allocator@4.0-impl \
 	android.hardware.graphics.allocator-V1-service
 
 PRODUCT_PACKAGES += \
@@ -558,7 +554,9 @@ PRODUCT_PACKAGES += \
 # Enable project quotas and casefolding for emulated storage without sdcardfs
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
-$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/launch_with_vendor_ramdisk.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/android_t_baseline.mk)
+PRODUCT_VIRTUAL_AB_COMPRESSION_METHOD := gz
+
 # Enforce generic ramdisk allow list
 $(call inherit-product, $(SRC_TARGET_DIR)/product/generic_ramdisk.mk)
 
@@ -1114,3 +1112,6 @@ DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE := device/google/gs201/device_framework
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.software.device_id_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.device_id_attestation.xml \
     frameworks/native/data/etc/android.hardware.device_unique_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.device_unique_attestation.xml
+
+# Call deleteAllKeys if vold detects a factory reset
+PRODUCT_VENDOR_PROPERTIES += ro.crypto.metadata_init_delete_all_keys.enabled=true
