@@ -41,6 +41,12 @@
     </exception>
     -->
 
+    <exception
+            package="com.google.android.apps.camera.services">
+        <!-- Camera -->
+        <permission name="android.permission.CAMERA" fixed="false"/>
+    </exception>
+
     <exception package="com.google.android.settings.intelligence">
         <!-- Calendar -->
         <permission name="android.permission.READ_CALENDAR" fixed="true"/>
@@ -151,6 +157,11 @@
         package="com.google.android.apps.work.oobconfig">
         <!-- Notifications -->
         <permission name="android.permission.POST_NOTIFICATIONS" fixed="true"/>
+    </exception>
+    <exception
+        package="com.google.android.apps.turbo">
+        <!-- Notifications -->
+        <permission name="android.permission.POST_NOTIFICATIONS" fixed="false"/>
     </exception>
 </exceptions>
 
