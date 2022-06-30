@@ -27,19 +27,32 @@ TARGET_SOC_NAME := google
 USES_DEVICE_GOOGLE_GS201 := true
 
 TARGET_ARCH := arm64
-TARGET_ARCH_VARIANT := armv8-a
+TARGET_ARCH_VARIANT := armv8-2a
 TARGET_CPU_ABI := arm64-v8a
-TARGET_CPU_VARIANT := generic
-TARGET_CPU_VARIANT_RUNTIME := cortex-a53
+TARGET_CPU_VARIANT := cortex-a55
+TARGET_CPU_VARIANT_RUNTIME := cortex-a55
 
 BOARD_KERNEL_CMDLINE += dyndbg=\"func alloc_contig_dump_pages +p\"
 BOARD_KERNEL_CMDLINE += earlycon=exynos4210,0x10A00000 console=ttySAC0,115200 androidboot.console=ttySAC0 printk.devkmsg=on
 BOARD_KERNEL_CMDLINE += cma_sysfs.experimental=Y
+BOARD_KERNEL_CMDLINE += cgroup_disable=memory
+BOARD_KERNEL_CMDLINE += rcupdate.rcu_expedited=1 rcu_nocbs=all
+BOARD_KERNEL_CMDLINE += stack_depot_disable=off page_pinner=on
+BOARD_KERNEL_CMDLINE += swiotlb=1024
 BOARD_BOOTCONFIG += androidboot.boot_devices=14700000.ufs
 
 TARGET_NO_BOOTLOADER := true
-TARGET_NO_KERNEL := false
 TARGET_NO_RADIOIMAGE := true
+ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
+BOARD_PREBUILT_BOOTIMAGE := $(wildcard $(TARGET_KERNEL_DIR)/boot.img)
+else
+BOARD_PREBUILT_BOOTIMAGE := $(wildcard $(TARGET_KERNEL_DIR)/boot-user.img)
+endif
+ifneq (,$(BOARD_PREBUILT_BOOTIMAGE))
+TARGET_NO_KERNEL := true
+else
+TARGET_NO_KERNEL := false
+endif
 BOARD_USES_GENERIC_KERNEL_IMAGE := true
 BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
 BOARD_MOVE_GSI_AVB_KEYS_TO_VENDOR_BOOT := true
@@ -60,6 +73,7 @@ AB_OTA_UPDATER := true
 
 AB_OTA_PARTITIONS += \
 	system \
+	system_dlkm \
 	system_ext \
 	product \
 	vbmeta_system
@@ -90,7 +104,6 @@ BOARD_EGL_CFG := device/google/gs201/conf/egl.cfg
 USE_OPENGL_RENDERER := true
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 BOARD_USES_EXYNOS5_COMMON_GRALLOC := true
-BOARD_USES_EXYNOS_GRALLOC_VERSION := $(DEVICE_USES_EXYNOS_GRALLOC_VERSION)
 BOARD_USES_ALIGN_RESTRICTION := false
 BOARD_USES_GRALLOC_ION_SYNC := true
 
@@ -98,8 +111,6 @@ BOARD_USES_GRALLOC_ION_SYNC := true
 BOARD_USES_SWIFTSHADER := false
 
 # Gralloc4
-ifeq ($(BOARD_USES_EXYNOS_GRALLOC_VERSION),4)
-
 ifeq ($(BOARD_USES_SWIFTSHADER),true)
 $(call soong_config_set,arm_gralloc,gralloc_arm_no_external_afbc,true)
 $(call soong_config_set,arm_gralloc,mali_gpu_support_afbc_basic,false)
@@ -113,21 +124,14 @@ $(call soong_config_set,arm_gralloc,mali_gpu_support_afbc_wideblk,true)
 $(call soong_config_set,arm_gralloc,gralloc_init_afbc,true)
 $(call soong_config_set,arm_gralloc,dpu_support_1010102_afbc,true)
 endif # ifeq ($(BOARD_USES_SWIFTSHADER),true)
-$(call soong_config_set,arm_gralloc,gralloc_ion_sync_on_lock,$(BOARD_USES_GRALLOC_ION_SYNC))
-endif # ifeq ($(BOARD_USES_EXYNOS_GRALLOC_VERSION),4)
 
-# libVendorGraphicbuffer
-ifeq ($(BOARD_USES_EXYNOS_GRALLOC_VERSION),4)
-$(call soong_config_set,vendorgraphicbuffer,gralloc_version,four)
-else
-$(call soong_config_set,vendorgraphicbuffer,gralloc_version,three)
-endif
+$(call soong_config_set,arm_gralloc,gralloc_ion_sync_on_lock,$(BOARD_USES_GRALLOC_ION_SYNC))
 
 # Graphics
 #BOARD_USES_EXYNOS_DATASPACE_FEATURE := true
 
 # Enable chain partition for system.
-BOARD_AVB_VBMETA_SYSTEM := system system_ext product
+BOARD_AVB_VBMETA_SYSTEM := system system_dlkm system_ext product
 BOARD_AVB_VBMETA_SYSTEM_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
 BOARD_AVB_VBMETA_SYSTEM_ALGORITHM := SHA256_RSA2048
 BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX := $(PLATFORM_SECURITY_PATCH_TIMESTAMP)
@@ -153,15 +157,12 @@ PRODUCT_FS_COMPRESSION := 1
 BOARD_FLASH_BLOCK_SIZE := 4096
 BOARD_MOUNT_SDCARD_RW := true
 
-# system.img
-BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE := erofs
-
 # product.img
-BOARD_PRODUCTIMAGE_FILE_SYSTEM_TYPE := erofs
+BOARD_PRODUCTIMAGE_FILE_SYSTEM_TYPE := ext4
 TARGET_COPY_OUT_PRODUCT := product
 
 # system_ext.img
-BOARD_SYSTEM_EXTIMAGE_FILE_SYSTEM_TYPE := erofs
+BOARD_SYSTEM_EXTIMAGE_FILE_SYSTEM_TYPE := ext4
 TARGET_COPY_OUT_SYSTEM_EXT := system_ext
 
 # persist.img
@@ -184,6 +185,7 @@ BOARD_SUPER_PARTITION_GROUPS := google_dynamic_partitions
 BOARD_GOOGLE_DYNAMIC_PARTITIONS_SIZE := 8527020032
 BOARD_GOOGLE_DYNAMIC_PARTITIONS_PARTITION_LIST := \
     system \
+    system_dlkm \
     system_ext \
     product \
     vendor \
@@ -191,6 +193,11 @@ BOARD_GOOGLE_DYNAMIC_PARTITIONS_PARTITION_LIST := \
 
 # Set error limit to BOARD_SUPER_PARTITON_SIZE - 500MB
 BOARD_SUPER_PARTITION_ERROR_LIMIT := 8006926336
+
+# Build a separate system_dlkm partition
+BOARD_USES_SYSTEM_DLKMIMAGE := true
+BOARD_SYSTEM_DLKMIMAGE_FILE_SYSTEM_TYPE := ext4
+TARGET_COPY_OUT_SYSTEM_DLKM := system_dlkm
 
 #
 # AUDIO & VOICE

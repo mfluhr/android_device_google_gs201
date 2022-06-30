@@ -19,6 +19,7 @@
 #include <android-base/file.h>
 #include <android-base/properties.h>
 #include <android-base/unique_fd.h>
+#include <android-base/parseint.h>
 #include <android-base/strings.h>
 #include <android/hardware/usb/gadget/1.2/IUsbGadget.h>
 #include <android/hardware/usb/gadget/1.2/types.h>
@@ -44,6 +45,7 @@ namespace implementation {
 using ::android::sp;
 using ::android::base::GetProperty;
 using ::android::base::SetProperty;
+using ::android::base::ParseUint;
 using ::android::base::unique_fd;
 using ::android::base::ReadFileToString;
 using ::android::base::Trim;
@@ -71,6 +73,9 @@ using ::android::hardware::usb::gadget::V1_2::GadgetFunction;
 using ::std::string;
 
 constexpr char kGadgetName[] = "11210000.dwc3";
+constexpr char kProcInterruptsPath[] = "/proc/interrupts";
+constexpr char kProcIrqPath[] = "/proc/irq/";
+constexpr char kSmpAffinityList[] = "/smp_affinity_list";
 #ifndef UDC_PATH
 #define UDC_PATH "/sys/class/udc/11210000.dwc3/"
 #endif
@@ -78,11 +83,22 @@ static MonitorFfs monitorFfs(kGadgetName);
 
 #define SPEED_PATH UDC_PATH "current_speed"
 
+#define BIG_CORE "6"
+#define MEDIUM_CORE "4"
+
+#define POWER_SUPPLY_PATH	"/sys/class/power_supply/usb/"
+#define USB_PORT0_PATH		"/sys/class/typec/port0/"
+
+#define CURRENT_MAX_PATH			POWER_SUPPLY_PATH	"current_max"
+#define CURRENT_USB_TYPE_PATH			POWER_SUPPLY_PATH	"usb_type"
+#define CURRENT_USB_POWER_OPERATION_MODE_PATH	USB_PORT0_PATH		"power_operation_mode"
+
 struct UsbGadget : public IUsbGadget {
     UsbGadget();
 
     // Makes sure that only one request is processed at a time.
     std::mutex mLockSetCurrentFunction;
+    std::string mGadgetIrqPath;
     uint64_t mCurrentUsbFunctions;
     bool mCurrentUsbFunctionsApplied;
     UsbSpeed mUsbSpeed;
@@ -99,6 +115,7 @@ struct UsbGadget : public IUsbGadget {
 
   private:
     Status tearDownGadget();
+    Status getUsbGadgetIrqPath();
     Status setupFunctions(uint64_t functions, const sp<V1_0::IUsbGadgetCallback> &callback,
                           uint64_t timeout);
 };

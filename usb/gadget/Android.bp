@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2021 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,23 +16,20 @@
 package {
     // See: http://go/android-license-faq
     // A large-scale-change added 'default_applicable_licenses' to import
-    // all of the 'license_kinds' from "//device/google/gs201:device_google_gs201_license"
+    // all of the 'license_kinds' from "device_google_gs201_license"
     // to get the below license kinds:
     //   SPDX-license-identifier-Apache-2.0
-    default_applicable_licenses: [
-        "//device/google/gs201:device_google_gs201_license",
-    ],
+    default_applicable_licenses: ["device_google_gs201_license"],
 }
 
 cc_binary {
-    name: "android.hardware.usb@1.3-service.gs201",
+    name: "android.hardware.usb.gadget-service",
     relative_install_path: "hw",
-    init_rc: ["android.hardware.usb@1.3-service.gs201.rc"],
+    init_rc: ["android.hardware.usb.gadget-service.rc"],
     vintf_fragments: [
-        "android.hardware.usb@1.3-service.gs201.xml",
-        "android.hardware.usb.gadget@1.2-service.gs201.xml",
+        "android.hardware.usb.gadget-service.xml",
     ],
-    srcs: ["service.cpp", "Usb.cpp", "UsbGadget.cpp"],
+    srcs: ["service_gadget.cpp", "UsbGadget.cpp"],
     cflags: ["-Wall", "-Werror"],
     shared_libs: [
         "libbase",
@@ -40,10 +37,6 @@ cc_binary {
         "liblog",
         "libutils",
         "libhardware",
-        "android.hardware.usb@1.0",
-        "android.hardware.usb@1.1",
-        "android.hardware.usb@1.2",
-        "android.hardware.usb@1.3",
         "android.hardware.usb.gadget@1.0",
         "android.hardware.usb.gadget@1.1",
         "android.hardware.usb.gadget@1.2",

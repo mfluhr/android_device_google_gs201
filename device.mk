@@ -21,7 +21,7 @@ TARGET_BOARD_PLATFORM := gs201
 AB_OTA_POSTINSTALL_CONFIG += \
 	RUN_POSTINSTALL_system=true \
 	POSTINSTALL_PATH_system=system/bin/otapreopt_script \
-	FILESYSTEM_TYPE_system=erofs \
+	FILESYSTEM_TYPE_system=ext4 \
 POSTINSTALL_OPTIONAL_system=true
 
 # Set Vendor SPL to match platform
@@ -53,8 +53,6 @@ PRODUCT_SOONG_NAMESPACES += \
 	vendor/google_nos/host/android \
 	vendor/google_nos/test/system-test-harness \
 	vendor/google/camera
-
-DEVICE_USES_EXYNOS_GRALLOC_VERSION := 4
 
 LOCAL_KERNEL := $(TARGET_KERNEL_DIR)/Image.lz4
 
@@ -122,9 +120,38 @@ PRODUCT_PRODUCT_PROPERTIES += \
 PRODUCT_PRODUCT_PROPERTIES += \
 	persist.vendor.ril.camp_on_earlier=1
 
-# Hearing Aid Audio Support Using Bluetooth LE
+# Enable SET_SCREEN_STATE request
+PRODUCT_PROPERTY_OVERRIDES += \
+	persist.vendor.ril.enable_set_screen_state=1
+
+# Set the Bluetooth Class of Device
+# Service Field: 0x5A -> 90
+#    Bit 14: LE audio
+#    Bit 17: Networking
+#    Bit 19: Capturing
+#    Bit 20: Object Transfer
+#    Bit 22: Telephony
+# MAJOR_CLASS: 0x42 -> 66 (Phone)
+# MINOR_CLASS: 0x0C -> 12 (Smart Phone)
 PRODUCT_PRODUCT_PROPERTIES += \
-	bluetooth.profile.asha.central.enabled=true
+    bluetooth.device.class_of_device=90,66,12
+
+# Set supported Bluetooth profiles to enabled
+PRODUCT_PRODUCT_PROPERTIES += \
+	bluetooth.profile.asha.central.enabled?=true \
+	bluetooth.profile.a2dp.source.enabled?=true \
+	bluetooth.profile.avrcp.target.enabled?=true \
+	bluetooth.profile.bas.client.enabled?=true \
+	bluetooth.profile.gatt.enabled?=true \
+	bluetooth.profile.hfp.ag.enabled?=true \
+	bluetooth.profile.hid.device.enabled?=true \
+	bluetooth.profile.hid.host.enabled?=true \
+	bluetooth.profile.map.server.enabled?=true \
+	bluetooth.profile.opp.enabled?=true \
+	bluetooth.profile.pan.nap.enabled?=true \
+	bluetooth.profile.pan.panu.enabled?=true \
+	bluetooth.profile.pbap.server.enabled?=true \
+	bluetooth.profile.sap.server.enabled?=true \
 
 # Carrier configuration default location
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -141,6 +168,7 @@ USES_LASSEN_MODEM := true
 ifeq ($(USES_GOOGLE_DIALER_CARRIER_SETTINGS),true)
 USE_GOOGLE_DIALER := true
 USE_GOOGLE_CARRIER_SETTINGS := true
+USES_GAUDIO := true
 endif
 
 ifeq (,$(filter aosp_%,$(TARGET_PRODUCT)))
@@ -155,62 +183,59 @@ endif
 USE_SWIFTSHADER := false
 
 # HWUI
-TARGET_USES_VULKAN = false
+TARGET_USES_VULKAN = true
 
-PRODUCT_SOONG_NAMESPACES += vendor/arm/mali/valhall
+PRODUCT_SOONG_NAMESPACES += \
+	vendor/arm/mali/valhall
 
 $(call soong_config_set,pixel_mali,soc,$(TARGET_BOARD_PLATFORM))
 
+include device/google/gs101/neuralnetwork/neuralnetwork.mk
+
 PRODUCT_PACKAGES += \
-       csffw_image_prebuilt__firmware_prebuilt_todx_mali_csffw.bin \
-       libGLES_mali \
-       vulkan.mali \
-       libOpenCL \
-       libgpudataproducer \
+	csffw_image_prebuilt__firmware_prebuilt_todx_mali_csffw.bin \
+	libGLES_mali \
+	vulkan.mali \
+	libOpenCL \
+	libgpudataproducer \
 
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.hardware.vulkan=mali
-
-include device/google/gs101/neuralnetwork/neuralnetwork.mk
+	ro.hardware.vulkan=mali
 
 ifeq ($(USE_SWIFTSHADER),true)
 PRODUCT_PACKAGES += \
-       libGLESv1_CM_swiftshader \
-       libEGL_swiftshader \
-       libGLESv2_swiftshader
+   libGLESv1_CM_swiftshader \
+   libEGL_swiftshader \
+   libGLESv2_swiftshader
 endif
 
 PRODUCT_COPY_FILES += \
-       frameworks/native/data/etc/android.hardware.opengles.aep.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.opengles.aep.xml \
-       frameworks/native/data/etc/android.hardware.vulkan.version-1_1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
-       frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
-       frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \
-       frameworks/native/data/etc/android.software.vulkan.deqp.level-2021-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level.xml \
-       frameworks/native/data/etc/android.software.opengles.deqp.level-2021-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.opengles.deqp.level.xml
+	frameworks/native/data/etc/android.hardware.opengles.aep.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.opengles.aep.xml \
+	frameworks/native/data/etc/android.hardware.vulkan.version-1_1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
+	frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
+	frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \
+	frameworks/native/data/etc/android.software.vulkan.deqp.level-2022-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level.xml \
+	frameworks/native/data/etc/android.software.opengles.deqp.level-2022-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.opengles.deqp.level.xml
 
 ifeq ($(USE_SWIFTSHADER),true)
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.hardware.egl = swiftshader
+	ro.hardware.egl = swiftshader
 else
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.hardware.egl = mali
+	ro.hardware.egl = mali
 endif
+
 PRODUCT_VENDOR_PROPERTIES += \
-       ro.opengles.version=196610 \
-       debug.renderengine.backend=skiaglthreaded \
-       graphics.gpu.profiler.support=true \
+	ro.opengles.version=196610 \
+	graphics.gpu.profiler.support=true \
+	debug.renderengine.backend=skiaglthreaded \
 
 # GRAPHICS - GPU (end)
 # ####################
 
 # Device Manifest, Device Compatibility Matrix for Treble
-ifeq ($(DEVICE_USES_EXYNOS_GRALLOC_VERSION), 4)
-	DEVICE_MANIFEST_FILE := \
-		device/google/gs201/manifest.xml
-else
-	DEVICE_MANIFEST_FILE := \
-		device/google/gs201/manifest-gralloc3.xml
-endif
+DEVICE_MANIFEST_FILE := \
+	device/google/gs201/manifest.xml
 
 ifneq (,$(filter aosp_%,$(TARGET_PRODUCT)))
 DEVICE_MANIFEST_FILE += \
@@ -235,8 +260,8 @@ DEVICE_PACKAGE_OVERLAYS += device/google/gs201/overlay
 # This will be updated to 33 (Android T) for shipping
 PRODUCT_SHIPPING_API_LEVEL := 32
 
-# Temporarily disable the debugfs restriction on 31 (Android S)
-PRODUCT_SET_DEBUGFS_RESTRICTIONS := false
+# RKP VINTF
+-include vendor/google_nos/host/android/hals/keymaster/aidl/strongbox/RemotelyProvisionedComponent-citadel.mk
 
 # Enforce the Product interface
 PRODUCT_PRODUCT_VNDK_VERSION := current
@@ -266,13 +291,14 @@ PRODUCT_PACKAGES += \
 	fstab.gs201.vendor_ramdisk \
 	fstab.gs201-fips \
 	fstab.gs201-fips.vendor_ramdisk
+
 PRODUCT_COPY_FILES += \
-	device/google/gs201/conf/fstab.persist:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.persist
+	device/google/$(TARGET_BOARD_PLATFORM)/conf/fstab.persist:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.persist \
+	device/google/$(TARGET_BOARD_PLATFORM)/conf/fstab.modem:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.modem
 
 # Shell scripts
 PRODUCT_COPY_FILES += \
 	device/google/gs201/init.insmod.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.insmod.sh \
-	device/google/$(TARGET_BOARD_PLATFORM)/set_usb_irq.sh:$(TARGET_COPY_OUT_VENDOR)/bin/hw/set_usb_irq.sh
 
 # insmod files
 PRODUCT_COPY_FILES += \
@@ -374,11 +400,17 @@ PRODUCT_PACKAGES += android.hardware.sensors@2.1-service.multihal
 
 # USB HAL
 PRODUCT_PACKAGES += \
-	android.hardware.usb@1.3-service.gs201
+	android.hardware.usb-service
+PRODUCT_PACKAGES += \
+	android.hardware.usb.gadget-service
 
 # MIDI feature
 PRODUCT_COPY_FILES += \
 	frameworks/native/data/etc/android.software.midi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.midi.xml
+
+# eSIM MEP Feature
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.telephony.euicc.mep.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/android.hardware.telephony.euicc.mep.xml
 
 # default usb debug functions
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
@@ -386,12 +418,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	persist.vendor.usb.usbradio.config=dm
 endif
 
-# Power HAL
-PRODUCT_COPY_FILES += \
-	device/google/gs201/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
-# adpf 16ms update rate
-PRODUCT_PRODUCT_PROPERTIES += \
-        vendor.powerhal.adpf.rate=16666666
 
 PRODUCT_COPY_FILES += \
 	device/google/gs201/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json
@@ -451,23 +477,9 @@ PRODUCT_PROPERTY_OVERRIDES += aaudio.hw_burst_min_usec=2000
 PRODUCT_PACKAGES += \
 	com.android.future.usb.accessory
 
-# for now include gralloc here. should come from hardware/google_devices/exynos5
-ifeq ($(DEVICE_USES_EXYNOS_GRALLOC_VERSION), 4)
-	PRODUCT_PACKAGES += \
-		android.hardware.graphics.mapper@4.0-impl \
-		android.hardware.graphics.allocator@4.0-service \
-		android.hardware.graphics.allocator@4.0-impl
-else
-	PRODUCT_PACKAGES += \
-		android.hardware.graphics.mapper@2.0-impl \
-		android.hardware.graphics.allocator@2.0-service \
-		android.hardware.graphics.allocator@2.0-impl \
-		gralloc.$(TARGET_BOARD_PLATFORM)
-endif
-
-# AIDL memtrack
 PRODUCT_PACKAGES += \
-	android.hardware.memtrack-service.example
+	android.hardware.graphics.mapper@4.0-impl \
+	android.hardware.graphics.allocator-V1-service
 
 PRODUCT_PACKAGES += \
 	memtrack.$(TARGET_BOARD_PLATFORM) \
@@ -542,7 +554,9 @@ PRODUCT_PACKAGES += \
 # Enable project quotas and casefolding for emulated storage without sdcardfs
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
-$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/launch_with_vendor_ramdisk.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/android_t_baseline.mk)
+PRODUCT_VIRTUAL_AB_COMPRESSION_METHOD := gz
+
 # Enforce generic ramdisk allow list
 $(call inherit-product, $(SRC_TARGET_DIR)/product/generic_ramdisk.mk)
 
@@ -614,12 +628,18 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.early.app.duration=16600000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.sf.duration=16600000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.earlyGl.app.duration=16600000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.frame_rate_multiple_threshold=120
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.layer_caching_active_layer_timeout_ms=1000
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += debug.sf.treat_170m_as_sRGB=1
 
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.enable_layer_caching=true
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.set_idle_timer_ms?=80
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.set_touch_timer_ms=200
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.set_display_power_timer_ms=1000
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.use_content_detection_for_refresh_rate=true
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.max_frame_buffer_acquired_buffers=3
+
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.supports_background_blur=1
+PRODUCT_SYSTEM_PROPERTIES += ro.launcher.blur.appLaunch=0
 
 # Must align with HAL types Dataspace
 # The data space of wide color gamut composition preference is Dataspace::DISPLAY_P3
@@ -857,8 +877,10 @@ SUPPORT_MULTI_SIM := true
 SUPPORT_NR := true
 # Support 5G on both stacks
 SUPPORT_NR_DS := true
-# Using IRadio 1.6
-USE_RADIO_HAL_1_6 := true
+# Using IRadio 2.0
+USE_RADIO_HAL_2_0 := true
+# Using Early Send Device Info
+USE_EARLY_SEND_DEVICE_INFO := true
 
 #$(call inherit-product, vendor/google_devices/telephony/common/device-vendor.mk)
 #$(call inherit-product, vendor/google_devices/gs201/proprietary/device-vendor.mk)
@@ -893,13 +915,15 @@ PRODUCT_PACKAGES += modem_logging_control
 
 # modem logging configs
 PRODUCT_COPY_FILES += \
-	device/google/gs201/radio/config/logging.conf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/logging.conf \
-	device/google/gs201/radio/config/default.cfg:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default.cfg \
-	device/google/gs201/radio/config/default.nprf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default.nprf \
-	device/google/gs201/radio/config/default_metrics.xml:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default_metrics.xml
-
-PRODUCT_COPY_FILES += \
-	device/google/gs201/radio/gnss_blanking.csv:$(TARGET_COPY_OUT_VENDOR)/etc/modem/gnss_blanking.csv
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/logging.conf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/logging.conf \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/default.cfg:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default.cfg \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/default.nprf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default.nprf \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/default_metrics.xml:$(TARGET_COPY_OUT_VENDOR)/etc/modem/default_metrics.xml \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_Default.cfg:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_Default.cfg \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_Default.nprf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_Default.nprf \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_Default_metrics.xml:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_Default_metrics.xml \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_stability.cfg:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_stability.cfg \
+	device/google/$(TARGET_BOARD_PLATFORM)/radio/config/Pixel_stability.nprf:$(TARGET_COPY_OUT_VENDOR)/etc/modem/Pixel_stability.nprf \
 
 # ARM NN files
 ARM_COMPUTE_CL_ENABLE := 1
@@ -923,7 +947,7 @@ PRODUCT_PACKAGES += \
 	android.hardware.audio.effect@7.0-impl \
 	android.hardware.soundtrigger@2.3-impl \
 	vendor.google.whitechapel.audio.audioext@3.0-impl \
-	android.hardware.bluetooth.audio@2.1-impl
+	android.hardware.bluetooth.audio-impl \
 
 #
 ##Audio HAL libraries
@@ -943,7 +967,6 @@ PRODUCT_PACKAGES += \
 	audio_amcs_ext \
 	audio.usb.default \
 	audio.usbv2.default \
-	audio.a2dp.default \
 	audio.bluetooth.default \
 	audio.r_submix.default \
 	audio_spk_35l41 \
@@ -1071,6 +1094,9 @@ include hardware/google/pixel/PixelLogger/PixelLogger.mk
 # sscoredump
 include hardware/google/pixel/sscoredump/device.mk
 
+# RadioExt Version
+USES_RADIOEXT_V1_4 = true
+
 # Wifi ext
 include hardware/google/pixel/wifi_ext/device.mk
 
@@ -1081,3 +1107,11 @@ PRODUCT_PACKAGES_DEBUG += BatteryStatsViewer
 # (TODO: b/169535506) This includes the FCM for system_ext and product partition.
 # It must be split into the FCM of each partition.
 DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE := device/google/gs201/device_framework_matrix_product.xml
+
+# Keymint configuration
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.software.device_id_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.device_id_attestation.xml \
+    frameworks/native/data/etc/android.hardware.device_unique_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.device_unique_attestation.xml
+
+# Call deleteAllKeys if vold detects a factory reset
+PRODUCT_VENDOR_PROPERTIES += ro.crypto.metadata_init_delete_all_keys.enabled=true
