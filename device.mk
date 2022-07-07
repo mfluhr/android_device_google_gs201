@@ -141,24 +141,17 @@ PRODUCT_PRODUCT_PROPERTIES += \
 	bluetooth.profile.asha.central.enabled?=true \
 	bluetooth.profile.a2dp.source.enabled?=true \
 	bluetooth.profile.avrcp.target.enabled?=true \
-	bluetooth.profile.bap.broadcast.assist.enabled?=true \
-	bluetooth.profile.bap.unicast.client.enabled?=true \
 	bluetooth.profile.bas.client.enabled?=true \
-	bluetooth.profile.csip.set_coordinator.enabled?=true \
 	bluetooth.profile.gatt.enabled?=true \
-	bluetooth.profile.hap.client.enabled?=true \
 	bluetooth.profile.hfp.ag.enabled?=true \
 	bluetooth.profile.hid.device.enabled?=true \
 	bluetooth.profile.hid.host.enabled?=true \
 	bluetooth.profile.map.server.enabled?=true \
-	bluetooth.profile.mcp.server.enabled?=true \
 	bluetooth.profile.opp.enabled?=true \
 	bluetooth.profile.pan.nap.enabled?=true \
 	bluetooth.profile.pan.panu.enabled?=true \
 	bluetooth.profile.pbap.server.enabled?=true \
 	bluetooth.profile.sap.server.enabled?=true \
-	bluetooth.profile.ccp.server.enabled?=true \
-	bluetooth.profile.vcp.controller.enabled?=true
 
 # Carrier configuration default location
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -175,6 +168,7 @@ USES_LASSEN_MODEM := true
 ifeq ($(USES_GOOGLE_DIALER_CARRIER_SETTINGS),true)
 USE_GOOGLE_DIALER := true
 USE_GOOGLE_CARRIER_SETTINGS := true
+USES_GAUDIO := true
 endif
 
 ifeq (,$(filter aosp_%,$(TARGET_PRODUCT)))
@@ -1118,3 +1112,6 @@ DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE := device/google/gs201/device_framework
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.software.device_id_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.device_id_attestation.xml \
     frameworks/native/data/etc/android.hardware.device_unique_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.device_unique_attestation.xml
+
+# Call deleteAllKeys if vold detects a factory reset
+PRODUCT_VENDOR_PROPERTIES += ro.crypto.metadata_init_delete_all_keys.enabled=true
