@@ -35,15 +35,6 @@
             <instance>default</instance>
         </interface>
     </hal>
-    <hal format = "hidl">
-        <name>android.hardware.dumpstate</name>
-        <transport>hwbinder</transport>
-        <version>1.1</version>
-        <interface>
-            <name>IDumpstateDevice</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
     <hal format="hidl">
         <name>android.hardware.boot</name>
         <transport>hwbinder</transport>
@@ -67,18 +58,9 @@
         </interface>
     </hal>
     <hal format="hidl">
-      <name>vendor.google.google_battery</name>
-      <transport>hwbinder</transport>
-      <version>1.2</version>
-      <interface>
-        <name>IGoogleBattery</name>
-        <instance>default</instance>
-      </interface>
-    </hal>
-    <hal format="hidl">
        <name>vendor.google.whitechapel.audio.audioext</name>
        <transport>hwbinder</transport>
-       <version>3.0</version>
+       <version>4.0</version>
        <interface>
            <name>IAudioExt</name>
            <instance>default</instance>
