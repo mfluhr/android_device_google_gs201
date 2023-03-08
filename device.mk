@@ -22,6 +22,7 @@ include device/google/gs-common/modem/modem.mk
 include device/google/gs-common/aoc/aoc.mk
 include device/google/gs-common/thermal/thermal.mk
 include device/google/gs-common/pixel_metrics/pixel_metrics.mk
+include device/google/gs-common/performance/perf.mk
 TARGET_BOARD_PLATFORM := gs201
 
 AB_OTA_POSTINSTALL_CONFIG += \
@@ -200,8 +201,8 @@ USES_GAUDIO := true
 # Must match BOARD_USES_SWIFTSHADER in BoardConfig.mk
 USE_SWIFTSHADER := false
 
-# Must match BOARD_USES_ANGLE in BoardConfig.mk
-USE_ANGLE := false
+# by default, USE_ANGLE is false
+USE_ANGLE ?= false
 
 # HWUI
 TARGET_USES_VULKAN = true
@@ -256,6 +257,11 @@ else
 PRODUCT_VENDOR_PROPERTIES += \
 	ro.hardware.egl = mali
 endif
+
+# Configure EGL blobcache
+PRODUCT_VENDOR_PROPERTIES += \
+	ro.egl.blobcache.multifile=true \
+	ro.egl.blobcache.multifile_limit=134217728 \
 
 PRODUCT_VENDOR_PROPERTIES += \
 	ro.opengles.version=196610 \
@@ -563,7 +569,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES_DEBUG += \
 	f2fs_io \
 	check_f2fs \
-	f2fsstat \
 	f2fs.fibmap \
 	dump.f2fs
 
@@ -923,6 +928,8 @@ SUPPORT_NR := true
 SUPPORT_NR_DS := true
 # Using IRadio 2.0
 USE_RADIO_HAL_2_0 := true
+# Support SecureElement HAL for HIDL
+USE_SE_HIDL := true
 # Using Early Send Device Info
 USE_EARLY_SEND_DEVICE_INFO := true
 
@@ -1075,11 +1082,19 @@ $(call soong_config_set,aoc,target_product,$(TARGET_PRODUCT))
 
 #
 ## Audio properties
+ifneq (,$(filter $(TANGOR_PRODUCT), $(TARGET_PRODUCT)))
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.config.vc_call_vol_steps=7 \
+	ro.config.media_vol_steps=20 \
+	ro.audio.monitorRotation = true \
+	ro.audio.offload_wakelock=false
+else
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.config.vc_call_vol_steps=7 \
 	ro.config.media_vol_steps=25 \
 	ro.audio.monitorRotation = true \
 	ro.audio.offload_wakelock=false
+endif
 
 # vndservicemanager and vndservice no longer included in API 30+, however needed by vendor code.
 # See b/148807371 for reference
