@@ -18,10 +18,19 @@ include device/google/gs-common/device.mk
 include device/google/gs-common/gs_watchdogd/watchdog.mk
 include device/google/gs-common/ramdump/ramdump.mk
 include device/google/gs-common/soc/soc.mk
+include device/google/gs-common/soc/freq.mk
 include device/google/gs-common/modem/modem.mk
 include device/google/gs-common/aoc/aoc.mk
 include device/google/gs-common/thermal/thermal.mk
 include device/google/gs-common/pixel_metrics/pixel_metrics.mk
+include device/google/gs-common/performance/perf.mk
+include device/google/gs-common/display/dump.mk
+include device/google/gs-common/camera/dump.mk
+include device/google/gs-common/gxp/dump.mk
+include device/google/gs-common/gps/dump/log.mk
+include device/google/gs-common/radio/dump.mk
+include device/google/gs-common/umfw_stat/umfw_stat.mk
+
 TARGET_BOARD_PLATFORM := gs201
 
 AB_OTA_POSTINSTALL_CONFIG += \
@@ -200,8 +209,8 @@ USES_GAUDIO := true
 # Must match BOARD_USES_SWIFTSHADER in BoardConfig.mk
 USE_SWIFTSHADER := false
 
-# Must match BOARD_USES_ANGLE in BoardConfig.mk
-USE_ANGLE := false
+# by default, USE_ANGLE is false
+USE_ANGLE ?= false
 
 # HWUI
 TARGET_USES_VULKAN = true
@@ -222,6 +231,13 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_VENDOR_PROPERTIES += \
 	ro.hardware.vulkan=mali
+
+# Mali Configuration Properties
+# b/221255664 prevents setting PROTECTED_MAX_CORE_COUNT=2
+PRODUCT_VENDOR_PROPERTIES += \
+      	vendor.mali.base_protected_max_core_count=1 \
+	vendor.mali.base_protected_tls_max=67108864 \
+	vendor.mali.platform_agt_frequency_khz=24576
 
 ifeq ($(USE_SWIFTSHADER),true)
 PRODUCT_PACKAGES += \
@@ -257,10 +273,15 @@ PRODUCT_VENDOR_PROPERTIES += \
 	ro.hardware.egl = mali
 endif
 
+# Configure EGL blobcache
+PRODUCT_VENDOR_PROPERTIES += \
+	ro.egl.blobcache.multifile=true \
+	ro.egl.blobcache.multifile_limit=134217728 \
+
 PRODUCT_VENDOR_PROPERTIES += \
 	ro.opengles.version=196610 \
 	graphics.gpu.profiler.support=true \
-	debug.renderengine.backend=skiaglthreaded \
+	debug.renderengine.backend=skiavkthreaded
 
 # GRAPHICS - GPU (end)
 # ####################
@@ -563,7 +584,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES_DEBUG += \
 	f2fs_io \
 	check_f2fs \
-	f2fsstat \
 	f2fs.fibmap \
 	dump.f2fs
 
@@ -923,6 +943,8 @@ SUPPORT_NR := true
 SUPPORT_NR_DS := true
 # Using IRadio 2.0
 USE_RADIO_HAL_2_0 := true
+# Support SecureElement HAL for HIDL
+USE_SE_HIDL := true
 # Using Early Send Device Info
 USE_EARLY_SEND_DEVICE_INFO := true
 
@@ -1008,63 +1030,7 @@ PRODUCT_PACKAGES += \
 
 # Audio
 # Audio HAL Server & Default Implementations
-PRODUCT_PACKAGES += \
-	android.hardware.audio.service \
-	android.hardware.audio@7.1-impl \
-	android.hardware.audio.effect@7.0-impl \
-	android.hardware.soundtrigger@2.3-impl \
-	vendor.google.whitechapel.audio.audioext@4.0-impl \
-	android.hardware.bluetooth.audio-impl \
-
-#
-##Audio HAL libraries
-PRODUCT_PACKAGES += \
-	audio.primary.$(TARGET_BOARD_PLATFORM) \
-	audio.platform.aoc \
-	audio_tunnel_aoc \
-	aoc_aud_ext \
-	libaoctuningdecoder \
-	liboffloadeffect \
-	audio_bt_aoc \
-	audio_waves_aoc \
-	audio_fortemedia_aoc \
-	audio_bluenote_aoc \
-	audio_usb_aoc \
-	audio_cca_aoc \
-	libamcsextfile \
-	audio_amcs_ext \
-	audio.usb.default \
-	audio.usbv2.default \
-	audio.bluetooth.default \
-	audio.r_submix.default \
-	audio_spk_35l41 \
-	sound_trigger.primary.$(TARGET_BOARD_PLATFORM)
-#	libaoc_waves \
-#
-
-##Audio Vendor libraries
-PRODUCT_PACKAGES += \
-	libfvsam_prm_parser \
-	libmahalcontroller \
-	libAlgFx_HiFi3z
-#
-## AudioHAL Configurations
-PRODUCT_COPY_FILES += \
-	frameworks/av/services/audiopolicy/config/a2dp_audio_policy_configuration_7_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/a2dp_audio_policy_configuration_7_0.xml \
-	frameworks/av/services/audiopolicy/config/a2dp_in_audio_policy_configuration_7_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/a2dp_in_audio_policy_configuration_7_0.xml \
-	frameworks/av/services/audiopolicy/config/hearing_aid_audio_policy_configuration_7_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/hearing_aid_audio_policy_configuration_7_0.xml \
-	frameworks/av/services/audiopolicy/config/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
-	frameworks/av/services/audiopolicy/config/usb_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_policy_configuration.xml \
-        frameworks/av/services/audiopolicy/config/audio_policy_volumes.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_volumes.xml \
-	frameworks/av/services/audiopolicy/config/default_volume_tables.xml:$(TARGET_COPY_OUT_VENDOR)/etc/default_volume_tables.xml \
-	frameworks/av/services/audiopolicy/config/bluetooth_audio_policy_configuration_7_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/bluetooth_audio_policy_configuration_7_0.xml
-
-##Audio soong
-PRODUCT_SOONG_NAMESPACES += \
-	vendor/google/whitechapel/audio/hal \
-	vendor/google/whitechapel/audio/interfaces
-
-$(call soong_config_set,aoc_audio_board,platform,$(TARGET_BOARD_PLATFORM))
+include device/google/gs-common/audio/hidl_gs201.mk
 
 ## AoC soong
 PRODUCT_SOONG_NAMESPACES += \
@@ -1075,11 +1041,19 @@ $(call soong_config_set,aoc,target_product,$(TARGET_PRODUCT))
 
 #
 ## Audio properties
+ifneq (,$(filter $(TANGOR_PRODUCT), $(TARGET_PRODUCT)))
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.config.vc_call_vol_steps=7 \
+	ro.config.media_vol_steps=20 \
+	ro.audio.monitorRotation = true \
+	ro.audio.offload_wakelock=false
+else
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.config.vc_call_vol_steps=7 \
 	ro.config.media_vol_steps=25 \
 	ro.audio.monitorRotation = true \
 	ro.audio.offload_wakelock=false
+endif
 
 # vndservicemanager and vndservice no longer included in API 30+, however needed by vendor code.
 # See b/148807371 for reference
@@ -1124,7 +1098,6 @@ include device/google/gs-common/edgetpu/edgetpu.mk
 $(call soong_config_set,edgetpu_config,chip,janeiro)
 # TPU firmware
 PRODUCT_PACKAGES += edgetpu-janeiro.fw
-
 
 # Connectivity Thermal Power Manager
 PRODUCT_PACKAGES += \

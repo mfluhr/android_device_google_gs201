@@ -238,6 +238,7 @@ on init
     # Dump eeprom
     chown system system /sys/devices/platform/10970000.hsi2c/i2c-5/5-0050/eeprom
     chown system system /sys/devices/platform/10970000.hsi2c/i2c-4/4-0050/eeprom
+    chown system system /sys/devices/platform/10da0000.hsi2c/i2c-5/5-0050/eeprom
     chown system system /sys/devices/platform/10da0000.hsi2c/i2c-6/6-0050/eeprom
     chown system system /sys/devices/platform/10da0000.hsi2c/i2c-7/7-0050/eeprom
 
@@ -279,6 +280,12 @@ on init
     # Adaptive charge
     chown system system /sys/class/power_supply/battery/charge_deadline
 
+    # Charging policy
+    chown system system /sys/class/power_supply/battery/charging_policy
+
+    # BatteryHealthData
+    chown system system /sys/class/power_supply/battery/first_usage_date
+
     # Battery Defender
     chown system system /sys/devices/platform/google,battery/power_supply/battery/bd_trickle_cnt
     chown system system /sys/devices/platform/google,battery/power_supply/battery/bd_trickle_dry_run
@@ -306,6 +313,9 @@ on init
     # Important to include dd_state as it's used in battery defender in charger mode
     chown system system /sys/devices/platform/google,charger/dd_state
     chown system system /sys/devices/platform/google,charger/dd_settings
+
+    # Battery temperature filter
+    chown system system /sys/class/power_supply/battery/temp_filter_enable
 
     # Power Stats HAL
     chown system system /dev/bbd_pwrstat
@@ -453,6 +463,20 @@ on early-boot
     chown system system /dev/sys/block/bootdevice/slowio_write_cnt
     chown system system /dev/sys/block/bootdevice/slowio_unmap_cnt
     chown system system /dev/sys/block/bootdevice/slowio_sync_cnt
+
+    # PCIe link stats for pixelstats
+    chown system system /sys/devices/platform/11920000.pcie/link_stats/complete_timeout_irqs
+    chown system system /sys/devices/platform/11920000.pcie/link_stats/link_down_irqs
+    chown system system /sys/devices/platform/11920000.pcie/link_stats/link_recovery_failures
+    chown system system /sys/devices/platform/11920000.pcie/link_stats/link_up_average
+    chown system system /sys/devices/platform/11920000.pcie/link_stats/link_up_failures
+    chown system system /sys/devices/platform/11920000.pcie/link_stats/pll_lock_average
+    chown system system /sys/devices/platform/14520000.pcie/link_stats/complete_timeout_irqs
+    chown system system /sys/devices/platform/14520000.pcie/link_stats/link_down_irqs
+    chown system system /sys/devices/platform/14520000.pcie/link_stats/link_recovery_failures
+    chown system system /sys/devices/platform/14520000.pcie/link_stats/link_up_average
+    chown system system /sys/devices/platform/14520000.pcie/link_stats/link_up_failures
+    chown system system /sys/devices/platform/14520000.pcie/link_stats/pll_lock_average
 
     # Dump Battery EEPROM history for pixelstats
     chown system system /dev/battery_history
