@@ -2,27 +2,9 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-cc_binary {
-    name: "android.hardware.dumpstate-service.gs201",
-    srcs: [
-        "Dumpstate.cpp",
-        "service.cpp",
-    ],
-    init_rc: ["android.hardware.dumpstate@1.1-service.gs201.rc"],
-    vintf_fragments: ["android.hardware.dumpstate-service.gs201.xml"],
-    cflags: [
-        "-Wall",
-        "-Werror",
-    ],
-    shared_libs: [
-        "libbase",
-        "libbinder_ndk",
-        "libcutils",
-        "libdumpstateutil",
-        "liblog",
-        "libutils",
-        "android.hardware.dumpstate-V1-ndk",
-    ],
+sh_binary {
+    name: "dump_power_gs201.sh",
+    src: "dump_power_gs201.sh",
     vendor: true,
-    relative_install_path: "hw",
+    sub_dir: "dump",
 }
