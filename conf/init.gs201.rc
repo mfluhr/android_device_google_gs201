@@ -132,7 +132,7 @@ on init
     symlink /data/app /factory
 
     # Apply network parameters for high data performance.
-    write /proc/sys/net/core/rmem_default 327680
+    write /proc/sys/net/core/rmem_default 1310720
     write /proc/sys/net/core/rmem_max 8388608
     write /proc/sys/net/core/wmem_default 327680
     write /proc/sys/net/core/wmem_max 8388608
@@ -283,6 +283,9 @@ on init
     # Charging policy
     chown system system /sys/class/power_supply/battery/charging_policy
 
+    # BatteryHealthData
+    chown system system /sys/class/power_supply/battery/first_usage_date
+
     # Battery Defender
     chown system system /sys/devices/platform/google,battery/power_supply/battery/bd_trickle_cnt
     chown system system /sys/devices/platform/google,battery/power_supply/battery/bd_trickle_dry_run
@@ -338,6 +341,9 @@ on init
     write /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu5_memlat@17000010/mem_latency/ratio_ceil 2700
     write /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu6_memlat@17000010/mem_latency/ratio_ceil 3200
     write /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu7_memlat@17000010/mem_latency/ratio_ceil 3200
+
+    # Set boost_adpf_prio, -1 by default
+    write /proc/vendor_sched/boost_adpf_prio ${persist.device_config.vendor_system_native_boot.boost_adpf_prio:--1}
 
 on late-fs
     # Start bootanimation class before mount
@@ -713,7 +719,7 @@ on property:sys.boot_completed=1
     # Setup final cpuset
     write /dev/cpuset/top-app/cpus ${persist.device_config.vendor_system_native.top-app_cpuset:-0-7}
     write /dev/cpuset/foreground/cpus ${persist.device_config.vendor_system_native.foreground_cpuset:-0-3,4-5}
-    write /dev/cpuset/background/cpus ${persist.device_config.vendor_system_native.background_cpuset:-0-1}
+    write /dev/cpuset/background/cpus ${persist.device_config.vendor_system_native.background_cpuset:-0-3}
     write /dev/cpuset/system-background/cpus ${persist.device_config.vendor_system_native.system-background_cpuset:-0-3}
     write /dev/cpuset/restricted/cpus ${persist.device_config.vendor_system_native.restricted_cpuset:-0-3}
     write /dev/cpuset/camera-daemon/cpus ${persist.device_config.vendor_system_native.camera-daemon_cpuset:-0-7}
@@ -723,15 +729,17 @@ on property:sys.boot_completed=1
     write /proc/vendor_sched/ta_uclamp_min 1
     write /proc/vendor_sched/fg_uclamp_min 0
     write /proc/vendor_sched/sys_prefer_idle 0
-    # cfs_rq clamp is using tg->uclamp setting
-    # align it with the vendor_group setting
-    write /proc/vendor_sched/bg_uclamp_max 512
-    write /dev/cpuctl/background/cpu.uclamp.max 50
-    write /proc/vendor_sched/sysbg_uclamp_max 512
-    write /dev/cpuctl/system-background/cpu.uclamp.max 50
-    write /proc/vendor_sched/dex2oat_uclamp_max 615
-    write /dev/cpuctl/dex2oat/cpu.uclamp.max 60
-    write /proc/vendor_sched/ota_uclamp_max 410
+
+    # Set ug group
+    write /proc/vendor_sched/bg_ug 0
+    write /proc/vendor_sched/sys_ug 0
+    write /proc/vendor_sched/ota_ug 0
+    write /proc/vendor_sched/dex2oat_ug 1
+
+    # Set bg group throttle
+    write /proc/vendor_sched/ug_bg_group_throttle 308
+    # TODO: remove this one after all kernel prebuilts are merged
+    write /proc/vendor_sched/vug_bg_group_throttle 308
 
     # Set PMU freq limit parameters
     write /sys/devices/system/cpu/cpufreq/policy0/sched_pixel/lcpi_threshold 2
@@ -1049,7 +1057,7 @@ on property:persist.device_config.vendor_system_native.top-app_cpuset=*
 on property:persist.device_config.vendor_system_native.foreground_cpuset=*
     write /dev/cpuset/foreground/cpus ${persist.device_config.vendor_system_native.foreground_cpuset:-0-3,4-5}
 on property:persist.device_config.vendor_system_native.background_cpuset=*
-    write /dev/cpuset/background/cpus ${persist.device_config.vendor_system_native.background_cpuset:-0-1}
+    write /dev/cpuset/background/cpus ${persist.device_config.vendor_system_native.background_cpuset:-0-3}
 on property:persist.device_config.vendor_system_native.system-background_cpuset=*
     write /dev/cpuset/system-background/cpus ${persist.device_config.vendor_system_native.system-background_cpuset:-0-3}
 on property:persist.device_config.vendor_system_native.restricted_cpuset=*

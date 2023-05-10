@@ -124,9 +124,6 @@ BOARD_USES_GRALLOC_ION_SYNC := true
 # This should be the same value as USE_SWIFTSHADER in device.mk
 BOARD_USES_SWIFTSHADER := false
 
-# This should be the same value as USE_ANGLE in device.mk
-BOARD_USES_ANGLE := false
-
 # Gralloc4
 ifeq ($(BOARD_USES_SWIFTSHADER),true)
 $(call soong_config_set,arm_gralloc,gralloc_arm_no_external_afbc,true)
@@ -153,6 +150,10 @@ BOARD_AVB_VBMETA_SYSTEM_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
 BOARD_AVB_VBMETA_SYSTEM_ALGORITHM := SHA256_RSA2048
 BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX := $(PLATFORM_SECURITY_PATCH_TIMESTAMP)
 BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX_LOCATION := 1
+
+ifneq ($(PRODUCT_BUILD_PVMFW_IMAGE),false)
+BOARD_AVB_VBMETA_SYSTEM += pvmfw
+endif
 
 # Enable chained vbmeta for boot images
 BOARD_AVB_BOOT_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
@@ -251,8 +252,9 @@ endif
 # SoundTriggerHAL Configuration
 #BOARD_USE_SOUNDTRIGGER_HAL := false
 
-# Vibrator HAL actuator model configuration
+# Vibrator HAL actuator model and adaptive haptics configuration
 $(call soong_config_set,haptics,actuator_model,$(ACTUATOR_MODEL))
+$(call soong_config_set,haptics,adaptive_haptics_feature,$(ADAPTIVE_HAPTICS_FEATURE))
 
 # HWComposer
 BOARD_HWC_VERSION := hwc3
