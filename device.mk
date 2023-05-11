@@ -30,6 +30,8 @@ include device/google/gs-common/gxp/dump.mk
 include device/google/gs-common/gps/dump/log.mk
 include device/google/gs-common/radio/dump.mk
 include device/google/gs-common/umfw_stat/umfw_stat.mk
+include device/google/gs-common/gear/dumpstate/aidl.mk
+include device/google/gs-common/widevine/widevine.mk
 
 TARGET_BOARD_PLATFORM := gs201
 
@@ -235,6 +237,8 @@ PRODUCT_VENDOR_PROPERTIES += \
 # Mali Configuration Properties
 # b/221255664 prevents setting PROTECTED_MAX_CORE_COUNT=2
 PRODUCT_VENDOR_PROPERTIES += \
+	vendor.mali.platform.config=/vendor/etc/mali/platform.config \
+	vendor.mali.debug.config=/vendor/etc/mali/debug.config \
       	vendor.mali.base_protected_max_core_count=1 \
 	vendor.mali.base_protected_tls_max=67108864 \
 	vendor.mali.platform_agt_frequency_khz=24576
@@ -281,7 +285,7 @@ PRODUCT_VENDOR_PROPERTIES += \
 PRODUCT_VENDOR_PROPERTIES += \
 	ro.opengles.version=196610 \
 	graphics.gpu.profiler.support=true \
-	debug.renderengine.backend=skiavkthreaded
+	debug.renderengine.backend=skiaglthreaded
 
 # GRAPHICS - GPU (end)
 # ####################
@@ -471,9 +475,6 @@ include hardware/google/pixel/rebalance_interrupts/rebalance_interrupts.mk
 PRODUCT_PACKAGES += \
 	android.hardware.power.stats-service.pixel
 
-# dumpstate HAL
-PRODUCT_PACKAGES += \
-	android.hardware.dumpstate-service.gs201
 #
 # Audio HALs
 #
@@ -826,8 +827,10 @@ $(call inherit-product, system/core/trusty/trusty-base.mk)
 include device/google/gs-common/trusty/trusty.mk
 
 # Trusty unit test tool
-PRODUCT_PACKAGES_DEBUG += trusty-ut-ctrl \
-   tipc-test
+PRODUCT_PACKAGES_DEBUG += \
+   trusty-ut-ctrl \
+   tipc-test \
+   trusty_stats_test \
 
 include device/google/gs101/confirmationui/confirmationui.mk
 
@@ -836,11 +839,11 @@ PRODUCT_PACKAGES += \
 	securedpud.slider
 
 # Trusty Metrics Daemon
-#PRODUCT_SOONG_NAMESPACES += \
-#	vendor/google/trusty/common
-#
-#PRODUCT_PACKAGES += \
-#	trusty_metricsd
+PRODUCT_SOONG_NAMESPACES += \
+	vendor/google/trusty/common
+
+PRODUCT_PACKAGES += \
+	trusty_metricsd
 
 $(call soong_config_set,google_displaycolor,displaycolor_platform,gs201)
 PRODUCT_PACKAGES += \
@@ -1176,3 +1179,6 @@ PRODUCT_VENDOR_PROPERTIES += ro.crypto.metadata_init_delete_all_keys.enabled?=tr
 
 # Hardware Info
 include hardware/google/pixel/HardwareInfo/HardwareInfo.mk
+
+# UFS: the script is used to select the corresponding firmware to run FFU.
+PRODUCT_PACKAGES += ufs_firmware_update.sh
