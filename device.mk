@@ -211,9 +211,6 @@ USES_GAUDIO := true
 # Must match BOARD_USES_SWIFTSHADER in BoardConfig.mk
 USE_SWIFTSHADER := false
 
-# by default, USE_ANGLE is false
-USE_ANGLE ?= false
-
 # HWUI
 TARGET_USES_VULKAN = true
 
@@ -250,13 +247,6 @@ PRODUCT_PACKAGES += \
    libGLESv2_swiftshader
 endif
 
-ifeq ($(USE_ANGLE),true)
-PRODUCT_PACKAGES += \
-	libEGL_angle \
-	libGLESv1_CM_angle \
-	libGLESv2_angle
-endif
-
 PRODUCT_COPY_FILES += \
 	frameworks/native/data/etc/android.hardware.opengles.aep.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.opengles.aep.xml \
 	frameworks/native/data/etc/android.hardware.vulkan.version-1_3.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
@@ -268,10 +258,6 @@ PRODUCT_COPY_FILES += \
 ifeq ($(USE_SWIFTSHADER),true)
 PRODUCT_VENDOR_PROPERTIES += \
 	ro.hardware.egl = swiftshader
-else ifeq ($(USE_ANGLE),true)
-PRODUCT_VENDOR_PROPERTIES += \
-	ro.hardware.egl = angle \
-	ro.hardware.egl_legacy = mali
 else
 PRODUCT_VENDOR_PROPERTIES += \
 	ro.hardware.egl = mali
@@ -1155,6 +1141,7 @@ include hardware/google/pixel/wifi_ext/device.mk
 
 # Battery Stats Viewer
 PRODUCT_PACKAGES_DEBUG += BatteryStatsViewer
+PRODUCT_PACKAGES += dump_power_gs201.sh
 
 # Install product specific framework compatibility matrix
 # (TODO: b/169535506) This includes the FCM for system_ext and product partition.
