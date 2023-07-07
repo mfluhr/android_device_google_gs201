@@ -16,7 +16,8 @@
 
 #include <PowerStatsAidl.h>
 #include <Gs201CommonDataProviders.h>
-#include <AocStateResidencyDataProvider.h>
+#include <AdaptiveDvfsStateResidencyDataProvider.h>
+#include <AocTimedStateResidencyDataProvider.h>
 #include <DevfreqStateResidencyDataProvider.h>
 #include <DvfsStateResidencyDataProvider.h>
 #include <UfsStateResidencyDataProvider.h>
@@ -25,6 +26,7 @@
 #include <dataproviders/PowerStatsEnergyConsumer.h>
 #include <dataproviders/PowerStatsEnergyAttribution.h>
 #include <dataproviders/PixelStateResidencyDataProvider.h>
+#include <dataproviders/WlanStateResidencyDataProvider.h>
 
 #include <android-base/logging.h>
 #include <android-base/properties.h>
@@ -32,7 +34,8 @@
 #include <android/binder_process.h>
 #include <log/log.h>
 
-using aidl::android::hardware::power::stats::AocStateResidencyDataProvider;
+using aidl::android::hardware::power::stats::AdaptiveDvfsStateResidencyDataProvider;
+using aidl::android::hardware::power::stats::AocTimedStateResidencyDataProvider;
 using aidl::android::hardware::power::stats::DevfreqStateResidencyDataProvider;
 using aidl::android::hardware::power::stats::DvfsStateResidencyDataProvider;
 using aidl::android::hardware::power::stats::UfsStateResidencyDataProvider;
@@ -41,6 +44,7 @@ using aidl::android::hardware::power::stats::GenericStateResidencyDataProvider;
 using aidl::android::hardware::power::stats::IioEnergyMeterDataProvider;
 using aidl::android::hardware::power::stats::PixelStateResidencyDataProvider;
 using aidl::android::hardware::power::stats::PowerStatsEnergyConsumer;
+using aidl::android::hardware::power::stats::WlanStateResidencyDataProvider;
 
 // TODO (b/181070764) (b/182941084):
 // Remove this when Wifi/BT energy consumption models are available or revert before ship
@@ -102,6 +106,10 @@ void addPlaceholderEnergyConsumers(std::shared_ptr<PowerStats> p) {
 }
 
 void addAoC(std::shared_ptr<PowerStats> p) {
+    // When the given timeout is 0, the timeout will be replaced with "120ms * statesCount".
+    static const uint64_t TIMEOUT_MILLIS = 0;
+    // AoC clock is synced from "libaoc.c"
+    static const uint64_t AOC_CLOCK = 24576;
     std::string prefix = "/sys/devices/platform/19000000.aoc/control/";
 
     // Add AoC cores (a32, ff1, hf0, and hf1)
@@ -113,8 +121,8 @@ void addAoC(std::shared_ptr<PowerStats> p) {
     };
     std::vector<std::pair<std::string, std::string>> coreStates = {
             {"DWN", "off"}, {"RET", "retention"}, {"WFI", "wfi"}};
-    p->addStateResidencyDataProvider(std::make_unique<AocStateResidencyDataProvider>(coreIds,
-            coreStates));
+    p->addStateResidencyDataProvider(std::make_unique<AocTimedStateResidencyDataProvider>(coreIds,
+            coreStates, TIMEOUT_MILLIS, AOC_CLOCK));
 
     // Add AoC voltage stats
     std::vector<std::pair<std::string, std::string>> voltageIds = {
@@ -125,7 +133,8 @@ void addAoC(std::shared_ptr<PowerStats> p) {
                                                                       {"UUD", "ultra_underdrive"},
                                                                       {"UD", "underdrive"}};
     p->addStateResidencyDataProvider(
-            std::make_unique<AocStateResidencyDataProvider>(voltageIds, voltageStates));
+            std::make_unique<AocTimedStateResidencyDataProvider>(voltageIds, voltageStates,
+                    TIMEOUT_MILLIS, AOC_CLOCK));
 
     // Add AoC monitor mode
     std::vector<std::pair<std::string, std::string>> monitorIds = {
@@ -135,7 +144,8 @@ void addAoC(std::shared_ptr<PowerStats> p) {
             {"MON", "mode"},
     };
     p->addStateResidencyDataProvider(
-            std::make_unique<AocStateResidencyDataProvider>(monitorIds, monitorStates));
+            std::make_unique<AocTimedStateResidencyDataProvider>(monitorIds, monitorStates,
+                    TIMEOUT_MILLIS, AOC_CLOCK));
 
     // Add AoC restart count
     const GenericStateResidencyDataProvider::StateResidencyConfig restartCountConfig = {
@@ -158,82 +168,17 @@ void addAoC(std::shared_ptr<PowerStats> p) {
 void addDvfsStats(std::shared_ptr<PowerStats> p) {
     // A constant to represent the number of nanoseconds in one millisecond
     const int NS_TO_MS = 1000000;
+    std::string path = "/sys/devices/platform/acpm_stats/fvp_stats";
+
+    std::vector<std::pair<std::string, std::string>> adpCfgs = {
+        std::make_pair("CL0", "/sys/devices/system/cpu/cpufreq/policy0/stats"),
+        std::make_pair("CL1", "/sys/devices/system/cpu/cpufreq/policy4/stats"),
+        std::make_pair("CL2", "/sys/devices/system/cpu/cpufreq/policy6/stats")
+    };
+    p->addStateResidencyDataProvider(std::make_unique<AdaptiveDvfsStateResidencyDataProvider>(
+            path, NS_TO_MS, adpCfgs));
 
     std::vector<DvfsStateResidencyDataProvider::Config> cfgs;
-
-    cfgs.push_back({"MIF", {
-        std::make_pair("3172MHz", "3172000"),
-        std::make_pair("2730MHz", "2730000"),
-        std::make_pair("2535MHz", "2535000"),
-        std::make_pair("2288MHz", "2288000"),
-        std::make_pair("2028MHz", "2028000"),
-        std::make_pair("1716MHz", "1716000"),
-        std::make_pair("1539MHz", "1539000"),
-        std::make_pair("1352MHz", "1352000"),
-        std::make_pair("1014MHz", "1014000"),
-        std::make_pair("845MHz", "845000"),
-        std::make_pair("676MHz", "676000"),
-        std::make_pair("546MHz", "546000"),
-        std::make_pair("421MHz", "421000"),
-    }});
-
-    cfgs.push_back({"CL0", {
-        std::make_pair("2024MHz", "2024000"),
-        std::make_pair("1950MHz", "1950000"),
-        std::make_pair("1803MHz", "1803000"),
-        std::make_pair("1704MHz", "1704000"),
-        std::make_pair("1598MHz", "1598000"),
-        std::make_pair("1401MHz", "1401000"),
-        std::make_pair("1328MHz", "1328000"),
-        std::make_pair("1197MHz", "1197000"),
-        std::make_pair("1098MHz", "1098000"),
-        std::make_pair("930MHz", "930000"),
-        std::make_pair("738MHz", "738000"),
-        std::make_pair("574MHz", "574000"),
-        std::make_pair("300MHz", "300000"),
-        std::make_pair("0MHz", "0"),
-    }});
-
-    cfgs.push_back({"CL1", {
-        std::make_pair("2348MHz", "2348000"),
-        std::make_pair("2253MHz", "2253000"),
-        std::make_pair("2130MHz", "2130000"),
-        std::make_pair("1999MHz", "1999000"),
-        std::make_pair("1836MHz", "1836000"),
-        std::make_pair("1663MHz", "1663000"),
-        std::make_pair("1491MHz", "1491000"),
-        std::make_pair("1328MHz", "1328000"),
-        std::make_pair("1197MHz", "1197000"),
-        std::make_pair("1024MHz", "1024000"),
-        std::make_pair("910MHz", "910000"),
-        std::make_pair("799MHz", "799000"),
-        std::make_pair("696MHz", "696000"),
-        std::make_pair("553MHz", "553000"),
-        std::make_pair("400MHz", "400000"),
-        std::make_pair("0MHz", "0"),
-    }});
-
-    cfgs.push_back({"CL2", {
-        std::make_pair("2850MHz", "2850000"),
-        std::make_pair("2802MHz", "2802000"),
-        std::make_pair("2704MHz", "2704000"),
-        std::make_pair("2630MHz", "2630000"),
-        std::make_pair("2507MHz", "2507000"),
-        std::make_pair("2401MHz", "2401000"),
-        std::make_pair("2252MHz", "2252000"),
-        std::make_pair("2188MHz", "2188000"),
-        std::make_pair("2048MHz", "2048000"),
-        std::make_pair("1826MHz", "1826000"),
-        std::make_pair("1745MHz", "1745000"),
-        std::make_pair("1582MHz", "1582000"),
-        std::make_pair("1426MHz", "1426000"),
-        std::make_pair("1277MHz", "1277000"),
-        std::make_pair("1106MHz", "1106000"),
-        std::make_pair("984MHz", "984000"),
-        std::make_pair("851MHz", "851000"),
-        std::make_pair("500MHz", "500000"),
-        std::make_pair("0MHz", "0"),
-    }});
 
     cfgs.push_back({"TPU", {
         std::make_pair("1066MHz", "1066000"),
@@ -244,8 +189,16 @@ void addDvfsStats(std::shared_ptr<PowerStats> p) {
         std::make_pair("0MHz", "0"),
     }});
 
+    cfgs.push_back({"AUR", {
+        std::make_pair("1160MHz", "1160000"),
+        std::make_pair("750MHz", "750000"),
+        std::make_pair("373MHz", "373000"),
+        std::make_pair("178MHz", "178000"),
+        std::make_pair("0MHz", "0"),
+    }});
+
     p->addStateResidencyDataProvider(std::make_unique<DvfsStateResidencyDataProvider>(
-            "/sys/devices/platform/acpm_stats/fvp_stats", NS_TO_MS, cfgs));
+            path, NS_TO_MS, cfgs));
 }
 
 void addSoC(std::shared_ptr<PowerStats> p) {
@@ -367,7 +320,6 @@ void addGPU(std::shared_ptr<PowerStats> p) {
 
     // TODO (b/197721618): Measuring the GPU power numbers
     stateCoeffs = {
-        {"151000",  642},
         {"202000",  890},
         {"251000", 1102},
         {"302000", 1308},
@@ -381,7 +333,7 @@ void addGPU(std::shared_ptr<PowerStats> p) {
         {"848000", 4044}};
 
     p->addEnergyConsumer(PowerStatsEnergyConsumer::createMeterAndAttrConsumer(p,
-            EnergyConsumerType::OTHER, "GPU", {"S8S_VDD_G3D_L2"},
+            EnergyConsumerType::OTHER, "GPU", {"S8S_VDD_G3D_L2", "S2S_VDD_G3D"},
             {{UID_TIME_IN_STATE, "/sys/devices/platform/28000000.mali/uid_time_in_state"}},
             stateCoeffs));
 
@@ -538,6 +490,12 @@ void addWifi(std::shared_ptr<PowerStats> p) {
             cfgs));
 }
 
+void addWlan(std::shared_ptr<PowerStats> p) {
+    p->addStateResidencyDataProvider(std::make_unique<WlanStateResidencyDataProvider>(
+            "WLAN",
+            "/sys/kernel/wifi/power_stats"));
+}
+
 void addUfs(std::shared_ptr<PowerStats> p) {
     p->addStateResidencyDataProvider(std::make_unique<UfsStateResidencyDataProvider>("/sys/bus/platform/devices/14700000.ufs/ufs_stats/"));
 }
@@ -576,6 +534,10 @@ void addPowerDomains(std::shared_ptr<PowerStats> p) {
 }
 
 void addDevfreq(std::shared_ptr<PowerStats> p) {
+    p->addStateResidencyDataProvider(std::make_unique<DevfreqStateResidencyDataProvider>(
+            "MIF",
+            "/sys/devices/platform/17000010.devfreq_mif/devfreq/17000010.devfreq_mif"));
+
     p->addStateResidencyDataProvider(std::make_unique<DevfreqStateResidencyDataProvider>(
             "INT",
             "/sys/devices/platform/17000020.devfreq_int/devfreq/17000020.devfreq_int"));
@@ -638,13 +600,19 @@ void addPixelStateResidencyDataProvider(std::shared_ptr<PowerStats> p) {
     p->addStateResidencyDataProvider(std::move(pixelSdp));
 }
 
+void addCamera(std::shared_ptr<PowerStats> p) {
+    p->addEnergyConsumer(PowerStatsEnergyConsumer::createMeterConsumer(
+            p,
+            EnergyConsumerType::CAMERA,
+            "CAMERA",
+            {"VSYS_PWR_CAM"}));
+}
+
 void addGs201CommonDataProviders(std::shared_ptr<PowerStats> p) {
     setEnergyMeter(p);
 
     addPixelStateResidencyDataProvider(p);
-    // TODO(b/220032540): Re-enable AoC reporting when AoC long latency issue is fixed or
-    // the timeout mechanism is merged.
-    //addAoC(p);
+    addAoC(p);
     addDvfsStats(p);
     addSoC(p);
     addCPUclusters(p);
@@ -657,10 +625,7 @@ void addGs201CommonDataProviders(std::shared_ptr<PowerStats> p) {
     addPowerDomains(p);
     addDevfreq(p);
     addTPU(p);
-
-    // TODO (b/181070764) (b/182941084):
-    // Remove this when Wifi/BT energy consumption models are available or revert before ship
-    addPlaceholderEnergyConsumers(p);
+    addCamera(p);
 }
 
 void addNFC(std::shared_ptr<PowerStats> p, const std::string& path) {
