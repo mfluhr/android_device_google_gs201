@@ -32,6 +32,20 @@ TARGET_CPU_ABI := arm64-v8a
 TARGET_CPU_VARIANT := cortex-a55
 TARGET_CPU_VARIANT_RUNTIME := cortex-a55
 
+# Enable 64-bit for non-zygote.
+ZYGOTE_FORCE_64 := true
+
+# Force any prefer32 targets to be compiled as 64 bit.
+IGNORE_PREFER32_ON_DEVICE := true
+
+# Build the 32 bit targets
+TARGET_2ND_ARCH := arm
+TARGET_2ND_ARCH_VARIANT := armv8-a
+TARGET_2ND_CPU_ABI := armeabi-v7a
+TARGET_2ND_CPU_ABI2 := armeabi
+TARGET_2ND_CPU_VARIANT := generic
+TARGET_2ND_CPU_VARIANT_RUNTIME := cortex-a53
+
 BOARD_KERNEL_CMDLINE += dyndbg=\"func alloc_contig_dump_pages +p\"
 BOARD_KERNEL_CMDLINE += earlycon=exynos4210,0x10A00000 console=ttySAC0,115200 androidboot.console=ttySAC0 printk.devkmsg=on
 BOARD_KERNEL_CMDLINE += cma_sysfs.experimental=Y
@@ -39,15 +53,12 @@ BOARD_KERNEL_CMDLINE += cgroup_disable=memory
 BOARD_KERNEL_CMDLINE += rcupdate.rcu_expedited=1 rcu_nocbs=all
 BOARD_KERNEL_CMDLINE += stack_depot_disable=off page_pinner=on
 BOARD_KERNEL_CMDLINE += swiotlb=1024
+BOARD_KERNEL_CMDLINE += disable_dma32=on
 BOARD_BOOTCONFIG += androidboot.boot_devices=14700000.ufs
 
 TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
-ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
 BOARD_PREBUILT_BOOTIMAGE := $(wildcard $(TARGET_KERNEL_DIR)/boot.img)
-else
-BOARD_PREBUILT_BOOTIMAGE := $(wildcard $(TARGET_KERNEL_DIR)/boot-user.img)
-endif
 ifneq (,$(BOARD_PREBUILT_BOOTIMAGE))
 TARGET_NO_KERNEL := true
 else
@@ -87,6 +98,9 @@ endif
 ifneq ($(PRODUCT_BUILD_VENDOR_BOOT_IMAGE),false)
 AB_OTA_PARTITIONS += vendor_boot
 AB_OTA_PARTITIONS += dtbo
+endif
+ifeq ($(PRODUCT_BUILD_VENDOR_KERNEL_BOOT_IMAGE),true)
+AB_OTA_PARTITIONS += vendor_kernel_boot
 endif
 ifneq ($(PRODUCT_BUILD_VBMETA_IMAGE),false)
 AB_OTA_PARTITIONS += vbmeta
@@ -137,6 +151,10 @@ BOARD_AVB_VBMETA_SYSTEM_ALGORITHM := SHA256_RSA2048
 BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX := $(PLATFORM_SECURITY_PATCH_TIMESTAMP)
 BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX_LOCATION := 1
 
+ifneq ($(PRODUCT_BUILD_PVMFW_IMAGE),false)
+BOARD_AVB_VBMETA_SYSTEM += pvmfw
+endif
+
 # Enable chained vbmeta for boot images
 BOARD_AVB_BOOT_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
 BOARD_AVB_BOOT_ALGORITHM := SHA256_RSA2048
@@ -166,7 +184,7 @@ BOARD_SYSTEM_EXTIMAGE_FILE_SYSTEM_TYPE := ext4
 TARGET_COPY_OUT_SYSTEM_EXT := system_ext
 
 # persist.img
-BOARD_PERSISTIMAGE_FILE_SYSTEM_TYPE := f2fs
+BOARD_PERSISTIMAGE_FILE_SYSTEM_TYPE := ext4
 
 ########################
 # Video Codec
@@ -177,6 +195,9 @@ BOARD_USE_DEC_SW_CSC := true
 BOARD_USE_ENC_SW_CSC := true
 BOARD_SUPPORT_MFC_ENC_RGB := true
 BOARD_USE_BLOB_ALLOCATOR := false
+BOARD_SUPPORT_MFC_ENC_BT2020 := true
+BOARD_SUPPORT_FLEXIBLE_P010 := true
+
 ########################
 
 BOARD_SUPER_PARTITION_SIZE := 8531214336
@@ -198,6 +219,9 @@ BOARD_SUPER_PARTITION_ERROR_LIMIT := 8006926336
 BOARD_USES_SYSTEM_DLKMIMAGE := true
 BOARD_SYSTEM_DLKMIMAGE_FILE_SYSTEM_TYPE := ext4
 TARGET_COPY_OUT_SYSTEM_DLKM := system_dlkm
+
+# Testing related defines
+BOARD_PERFSETUP_SCRIPT := platform_testing/scripts/perf-setup/p10c10-setup.sh
 
 #
 # AUDIO & VOICE
@@ -228,12 +252,15 @@ endif
 # SoundTriggerHAL Configuration
 #BOARD_USE_SOUNDTRIGGER_HAL := false
 
+# Vibrator HAL actuator model and adaptive haptics configuration
+$(call soong_config_set,haptics,actuator_model,$(ACTUATOR_MODEL))
+$(call soong_config_set,haptics,adaptive_haptics_feature,$(ADAPTIVE_HAPTICS_FEATURE))
+
 # HWComposer
 BOARD_HWC_VERSION := hwc3
 TARGET_RUNNING_WITHOUT_SYNC_FRAMEWORK := false
 BOARD_HDMI_INCAPABLE := true
 TARGET_USES_HWC2 := true
-HWC_SKIP_VALIDATE := true
 HWC_SUPPORT_RENDER_INTENT := true
 HWC_SUPPORT_COLOR_TRANSFORM := true
 #BOARD_USES_DISPLAYPORT := true
@@ -347,9 +374,6 @@ BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
 BOARD_INIT_BOOT_HEADER_VERSION := 4
 BOARD_MKBOOTIMG_INIT_ARGS += --header_version $(BOARD_INIT_BOOT_HEADER_VERSION)
 
-BOARD_VENDOR_RAMDISK_FRAGMENTS := dlkm
-BOARD_VENDOR_RAMDISK_FRAGMENT.dlkm.KERNEL_MODULE_DIRS := top
-
 # Enable AVB2.0
 BOARD_AVB_ENABLE := true
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0x04000000
@@ -357,8 +381,8 @@ BOARD_INIT_BOOT_IMAGE_PARTITION_SIZE := 0x800000
 BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE := 0x04000000
 BOARD_DTBOIMG_PARTITION_SIZE := 0x01000000
 
-# System As Root
-BOARD_BUILD_SYSTEM_ROOT_IMAGE := false
+# Build vendor kernel boot image
+BOARD_VENDOR_KERNEL_BOOTIMAGE_PARTITION_SIZE := 0x04000000
 
 # Vendor ramdisk image for kernel development
 BOARD_BUILD_VENDOR_RAMDISK_IMAGE := true
@@ -368,11 +392,20 @@ KERNEL_MODULES := $(wildcard $(KERNEL_MODULE_DIR)/*.ko)
 
 BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE := $(KERNEL_MODULE_DIR)/vendor_dlkm.modules.blocklist
 
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD := $(strip $(shell cat $(KERNEL_MODULE_DIR)/vendor_boot.modules.load))
-ifndef BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD
-$(error vendor_boot.modules.load not found or empty)
+# Prebuilt kernel modules that are *not* listed in vendor_kernel_boot.modules.load
+BOARD_PREBUILT_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES = fips140/fips140.ko
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA = $(foreach k,$(BOARD_PREBUILT_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES),$(if $(wildcard $(KERNEL_MODULE_DIR)/$(k)), $(k)))
+KERNEL_MODULES += $(addprefix $(KERNEL_MODULE_DIR)/, $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA))
+
+# Kernel modules that are listed in vendor_kernel_boot.modules.load
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE := $(strip $(shell cat $(KERNEL_MODULE_DIR)/vendor_kernel_boot.modules.load))
+ifndef BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE
+$(error vendor_kernel_boot.modules.load not found or empty)
 endif
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES := $(addprefix $(KERNEL_MODULE_DIR)/, $(notdir $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD)))
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD := $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA)
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD += $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE)
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES := $(addprefix $(KERNEL_MODULE_DIR)/, $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_EXTRA))
+BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES += $(addprefix $(KERNEL_MODULE_DIR)/, $(notdir $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_LOAD_FILE)))
 
 BOARD_VENDOR_KERNEL_MODULES_LOAD := $(strip $(shell cat $(KERNEL_MODULE_DIR)/vendor_dlkm.modules.load))
 ifndef BOARD_VENDOR_KERNEL_MODULES_LOAD
@@ -393,3 +426,6 @@ BOARD_KERNEL_CMDLINE += log_buf_len=1024K
 
 # Protected VM firmware
 BOARD_PVMFWIMAGE_PARTITION_SIZE := 0x00100000
+
+# pick up library for cleaning digital car keys on factory reset
+-include vendor/google_devices/gs-common/proprietary/BoardConfigVendor.mk
