@@ -28,6 +28,7 @@
 using android::hardware::google::pixel::SysfsCollector;
 using android::hardware::google::pixel::UeventListener;
 
+#define BLOCK_STATS_LENGTH 17
 #define UFSHC_PATH(filename) "/dev/sys/block/bootdevice/" #filename
 #define UFS_ERR_PATH(err_type) UFSHC_PATH(err_stats/) #err_type
 const struct SysfsCollector::SysfsPaths sysfs_paths = {
@@ -55,11 +56,36 @@ const struct SysfsCollector::SysfsPaths sysfs_paths = {
         UFS_ERR_PATH(fatal_err_count),
         UFS_ERR_PATH(auto_hibern8_err_count)
     },
+    .BlockStatsLength = BLOCK_STATS_LENGTH,
+    .AmsRatePath = "/sys/devices/platform/audiometrics/ams_rate_read_once",
+    .MitigationPath = "/sys/devices/virtual/pmic/mitigation",
+    .ThermalStatsPaths = {
+        "/sys/devices/platform/100a0000.BIG/trip_counter",
+        "/sys/devices/platform/100a0000.MID/trip_counter",
+        "/sys/devices/platform/100a0000.LITTLE/trip_counter",
+        "/sys/devices/platform/100b0000.G3D/trip_counter",
+        "/sys/devices/platform/100b0000.TPU/trip_counter",
+        "/sys/devices/platform/100b0000.AUR/trip_counter",
+    },
+    .CCARatePath = "/sys/devices/platform/audiometrics/cca_rate_read_once",
+    .TempResidencyAndResetPaths = {
+        {
+            "/sys/kernel/metrics/thermal/tr_by_group/tmu/stats",
+            "/sys/kernel/metrics/thermal/tr_by_group/tmu/stats_reset"
+        },
+        {
+            "/sys/kernel/metrics/thermal/tr_by_group/spmic/stats",
+            "/sys/kernel/metrics/thermal/tr_by_group/spmic/stats_reset"
+        }
+    },
+    .ResumeLatencyMetricsPath = "/sys/kernel/metrics/resume_latency/resume_latency_metrics",
+    .LongIRQMetricsPath = "/sys/kernel/metrics/irq/long_irq_metrics",
+    .ModemPcieLinkStatsPath = "/sys/devices/platform/11920000.pcie/link_stats",
+    .WifiPcieLinkStatsPath = "/sys/devices/platform/14520000.pcie/link_stats"
 };
 
 const struct UeventListener::UeventPaths ueventPaths = {
         .AudioUevent = "/devices/virtual/amcs/amcs",
-        .WirelessChargerPtmcPath = "/sys/class/power_supply/wireless/device/ptmc_id",
         .TypeCPartnerUevent = "PRODUCT_TYPE="};
 
 int main() {
