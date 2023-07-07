@@ -9,7 +9,7 @@
     </hal>
     <hal format="aidl">
         <name>android.hardware.graphics.composer3</name>
-        <version>1</version>
+        <version>2</version>
         <interface>
             <name>IComposer</name>
             <instance>default</instance>
@@ -87,6 +87,10 @@
             <name>IDebugHost</name>
             <instance>default</instance>
         </interface>
+        <interface>
+            <name>IDebugManager</name>
+            <instance>default</instance>
+        </interface>
     </hal>
     <hal format="aidl" optional="true">
       <name>com.google.edgetpu</name>
@@ -98,7 +102,7 @@
     </hal>
     <hal format="aidl" optional="true">
         <name>com.google.edgetpu.dba</name>
-        <version>1</version>
+        <version>2</version>
         <interface>
             <name>IDevice</name>
             <instance>default</instance>
@@ -114,6 +118,7 @@
     </hal>
     <hal format="aidl" optional="true">
         <name>com.google.input</name>
+        <version>2</version>
         <interface>
             <name>ITouchContextService</name>
             <instance>default</instance>
@@ -137,7 +142,7 @@
     </hal>
     <hal format="aidl" optional="true">
         <name>vendor.google.google_battery</name>
-        <version>1</version>
+        <version>2</version>
         <interface>
             <name>IGoogleBattery</name>
             <instance>default</instance>
@@ -150,14 +155,6 @@
             <name>IRadioExt</name>
             <instance>default</instance>
         </interface>
-    </hal>
-    <hal format="hidl">
-       <name>vendor.google.whitechapel.audio.audioext</name>
-       <version>4.0</version>
-       <interface>
-           <name>IAudioExt</name>
-           <instance>default</instance>
-       </interface>
     </hal>
     <hal format="aidl" optional="true">
         <name>vendor.google.wifi_ext</name>
@@ -184,13 +181,5 @@
             <name>IOemSlsiRadioExternal</name>
             <instance>rilExternal</instance>
         </interface>
-    </hal>
-    <hal format="hidl">
-       <name>vendor.google.audiometricext</name>
-       <version>1.0</version>
-       <interface>
-           <name>IAudioMetricExt</name>
-           <instance>default</instance>
-       </interface>
     </hal>
 </compatibility-matrix>
