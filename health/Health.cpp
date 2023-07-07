@@ -28,7 +28,6 @@
 #include <health-impl/ChargerUtils.h>
 #include <pixelhealth/BatteryDefender.h>
 #include <pixelhealth/BatteryMetricsLogger.h>
-#include <pixelhealth/BatteryThermalControl.h>
 #include <pixelhealth/ChargerDetect.h>
 #include <pixelhealth/DeviceHealth.h>
 #include <pixelhealth/LowBatteryShutdownMetrics.h>
@@ -55,7 +54,6 @@ using aidl::android::hardware::health::charger::ChargerCallback;
 using aidl::android::hardware::health::charger::ChargerModeMain;
 using hardware::google::pixel::health::BatteryDefender;
 using hardware::google::pixel::health::BatteryMetricsLogger;
-using hardware::google::pixel::health::BatteryThermalControl;
 using hardware::google::pixel::health::DeviceHealth;
 using hardware::google::pixel::health::LowBatteryShutdownMetrics;
 using hardware::google::pixel::health::ChargerDetect;
@@ -70,8 +68,6 @@ constexpr char kVoltageAvg[] {FG_DIR "/voltage_now"};
 static BatteryDefender battDefender(WLC_DIR "/present",
     "/sys/devices/platform/google,charger/charge_start_level",
     "/sys/devices/platform/google,charger/charge_stop_level");
-static BatteryThermalControl battThermalControl(
-    "dev/thermal/tz-by-name/soc/mode");
 static BatteryMetricsLogger battMetricsLogger(kBatteryResistance, kBatteryOCV);
 static LowBatteryShutdownMetrics shutdownMetrics(kVoltageAvg);
 static DeviceHealth deviceHealth;
@@ -145,16 +141,17 @@ void private_healthd_board_init(struct healthd_config *hc) {
 }
 
 int private_healthd_board_battery_update(HealthInfo *health_info) {
+  int batt_level;
   deviceHealth.update(health_info);
-  battThermalControl.updateThermalState(*health_info);
   battMetricsLogger.logBatteryProperties(*health_info);
   shutdownMetrics.logShutdownVoltage(*health_info);
   // Allow BatteryDefender to override online properties
   ChargerDetect::onlineUpdate(health_info);
   battDefender.update(health_info);
 
+  batt_level = (health_info->batteryStatus == ::aidl::android::hardware::health::BatteryStatus::FULL) ? 101 : health_info->batteryLevel;
   if (needs_wlc_updates &&
-      !android::base::WriteStringToFile(std::to_string(health_info->batteryLevel), kWlcCapacity))
+      !android::base::WriteStringToFile(std::to_string(batt_level), kWlcCapacity))
       LOG(INFO) << "Unable to write battery level to wireless capacity";
 
   return 0;

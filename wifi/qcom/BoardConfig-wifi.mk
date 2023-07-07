@@ -18,6 +18,7 @@ LOCAL_WIFI_PATH := device/google/gs201/wifi/qcom
 
 # wlan flags
 BOARD_WLAN_DEVICE := qcwcn
+BOARD_WLAN_CHIP := wcn6740
 BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_$(BOARD_WLAN_DEVICE)
 BOARD_HOSTAPD_PRIVATE_LIB := lib_driver_cmd_$(BOARD_WLAN_DEVICE)
 BOARD_WPA_SUPPLICANT_DRIVER := NL80211
@@ -39,8 +40,12 @@ WIFI_HIDL_UNIFIED_SUPPLICANT_SERVICE_RC_ENTRY := true
 WIFI_DRIVER_STATE_CTRL_PARAM := "/dev/wlan"
 WIFI_DRIVER_STATE_ON := "ON"
 WIFI_DRIVER_STATE_OFF := "OFF"
+BOARD_HOSTAPD_CONFIG_80211W_MFP_OPTIONAL := true
 
 # WLAN driver configuration files
 PRODUCT_COPY_FILES += \
     $(LOCAL_WIFI_PATH)/wpa_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant_overlay.conf \
     $(LOCAL_WIFI_PATH)/p2p_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/p2p_supplicant_overlay.conf
+
+# Add BOARD_WLAN_CHIP to soong_config
+$(call soong_config_set,qcom_wifi,board_wlan_chip,wcn6740)
