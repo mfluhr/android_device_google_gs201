@@ -566,8 +566,12 @@ $(call soong_config_set,lyric,soc,gs201)
 $(call soong_config_set,google3a_config,soc,gs201)
 
 # WiFi
+ifeq ($(wildcard vendor/google/tangorpro/proprietary/vendor/apex/com.google.pixel.wifi.ext.apex),)
 PRODUCT_PACKAGES += \
-	android.hardware.wifi-service \
+	android.hardware.wifi-service
+endif
+
+PRODUCT_PACKAGES += \
 	wificond \
 	libwpa_client
 
