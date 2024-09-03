@@ -540,8 +540,12 @@ $(call soong_config_set,gch,hwl_library,lyric)
 endif
 
 # WiFi
+ifeq ($(wildcard vendor/google/tangorpro/proprietary/vendor/bin/hw/vendor.google.wifi_ext@1.0-service-vendor),)
 PRODUCT_PACKAGES += \
-	android.hardware.wifi@1.0-service \
+	android.hardware.wifi@1.0-service
+endif
+
+PRODUCT_PACKAGES += \
 	wificond \
 	libwpa_client
 
